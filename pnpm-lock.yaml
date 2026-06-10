@@ -149,6 +149,21 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)
 
+  infra/rules-tests:
+    devDependencies:
+      '@firebase/rules-unit-testing':
+        specifier: ^4.0.1
+        version: 4.0.1(firebase@12.14.0)
+      firebase:
+        specifier: ^12.14.0
+        version: 12.14.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)
+
   packages/shared-types:
     devDependencies:
       typescript:
@@ -648,6 +663,12 @@ packages:
     resolution: {integrity: sha512-lslywR5lGvHWTu4z/MPoYs3UwS3CKdeY+ELXY87087VsOpBpkD+9Orra23tA9GW683arPTDOM3CM6eKmtiOO3g==}
     peerDependencies:
       '@firebase/app': 0.x
+
+  '@firebase/rules-unit-testing@4.0.1':
+    resolution: {integrity: sha512-Vu8iMLP+dO9hCAqUCitWZQdORyM6CxucilRZtleeTZd5bejZmyOiaBPwYm3NOYG6025ac99CEeA+ETmJRxa9zg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      firebase: ^11.0.0
 
   '@firebase/storage-compat@0.4.3':
     resolution: {integrity: sha512-gruVqjtUGX8tEoeNbaWXZm0Zfcfcb7fvmDmBxV8yPAbWvExRnZYLO2+qw9idxNE7BvPXt5csyjSYHy//dAizxw==}
@@ -2822,6 +2843,10 @@ snapshots:
       '@firebase/logger': 0.5.1
       '@firebase/util': 1.15.1
       tslib: 2.8.1
+
+  '@firebase/rules-unit-testing@4.0.1(firebase@12.14.0)':
+    dependencies:
+      firebase: 12.14.0
 
   '@firebase/storage-compat@0.4.3(@firebase/app-compat@0.5.13)(@firebase/app-types@0.9.5)(@firebase/app@0.14.13)':
     dependencies:
