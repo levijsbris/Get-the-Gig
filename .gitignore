@@ -1,0 +1,57 @@
+# Node
+node_modules/
+.pnpm-store/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Vite
+.vite/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+
+# Test
+coverage/
+*.lcov
+.nyc_output/
+
+# Env
+.env
+.env.*.local
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*~
+
+# Emulator data
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+emulator-data/
+fake-gcs-data/
+
+# Local Claude state (keep skills + settings shared, ignore personal)
+.claude/settings.local.json

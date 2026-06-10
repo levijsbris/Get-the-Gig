@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+pnpm-lock.yaml
+**/bin
+**/obj
+*.tsbuildinfo
+
+# Pre-existing project prose — preserve author formatting.
+docs/
+.claude/
+CLAUDE.md
