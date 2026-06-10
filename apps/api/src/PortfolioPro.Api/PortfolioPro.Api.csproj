@@ -4,4 +4,10 @@
     <AssemblyName>PortfolioPro.Api</AssemblyName>
     <UserSecretsId>portfoliopro-api-dev</UserSecretsId>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+    <PackageReference Include="Google.Cloud.Firestore" Version="3.9.0" />
+  </ItemGroup>
 </Project>
