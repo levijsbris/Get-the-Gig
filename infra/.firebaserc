@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "portfoliopro-local",
+    "dev": "portfoliopro-dev",
+    "prod": "portfoliopro-prod"
+  }
+}

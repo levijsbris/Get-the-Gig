@@ -1,0 +1,71 @@
+# Local emulators for PortfolioPro.
+#
+# Services and host ports:
+#   firebase-emulators
+#     - Firestore:    8080
+#     - Auth:         9099
+#     - Emulator UI:  4000
+#     - Hub:          4400
+#     - Logging:      4500
+#   fake-gcs-server
+#     - HTTP API:     9199  (Cloud Storage compatible)
+#
+# Bring up:    docker compose up -d
+# Tear down:   docker compose down
+# Reset data:  docker compose down -v
+
+services:
+  firebase-emulators:
+    image: andreysenov/firebase-tools:13.29.1
+    container_name: portfoliopro-emulators
+    working_dir: /home/node
+    command: >
+      firebase emulators:start
+        --only auth,firestore
+        --project portfoliopro-local
+        --config /home/node/firebase.json
+    ports:
+      - '8080:8080' # Firestore
+      - '9099:9099' # Auth
+      - '4000:4000' # Emulator UI
+      - '4400:4400' # Hub
+      - '4500:4500' # Logging
+    volumes:
+      - ./infra/firebase.json:/home/node/firebase.json:ro
+      - ./infra/.firebaserc:/home/node/.firebaserc:ro
+      - ./infra/firestore.rules:/home/node/firestore.rules:ro
+      - ./infra/firestore.indexes.json:/home/node/firestore.indexes.json:ro
+      - emulator-data:/home/node/data
+    healthcheck:
+      # Use node + http (always present in firebase-tools image) — wget is not installed.
+      test:
+        - 'CMD-SHELL'
+        - 'node -e "require(''http'').get(''http://localhost:4400/emulators'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"'
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  fake-gcs:
+    image: fsouza/fake-gcs-server:1.50.2
+    container_name: portfoliopro-fake-gcs
+    command:
+      - -scheme=http
+      - -port=9199
+      - -external-url=http://localhost:9199
+      - -public-host=localhost:9199
+      - -backend=filesystem
+      - -filesystem-root=/data
+    ports:
+      - '9199:9199'
+    volumes:
+      - fake-gcs-data:/data
+    healthcheck:
+      # fake-gcs-server image is scratch-based; only its own binary is available.
+      # Healthcheck via TCP probe on the bound port from the image's binary is not possible,
+      # so we rely on Docker's port-bind check (no in-container healthcheck).
+      disable: true
+
+volumes:
+  emulator-data:
+  fake-gcs-data:
