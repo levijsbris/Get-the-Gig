@@ -15,12 +15,14 @@ public static partial class UsernameRules
         if (string.IsNullOrWhiteSpace(candidate))
             return UsernameValidation.Invalid("Username is required.");
 
+        // Reserved before regex so single-character reserved words ("v") report a
+        // meaningful "reserved" error rather than "too short".
+        if (ReservedUsernames.IsReserved(candidate))
+            return UsernameValidation.Invalid("That username is reserved.");
+
         if (!UsernamePattern().IsMatch(candidate))
             return UsernameValidation.Invalid(
                 $"Username must be {MinLength}-{MaxLength} characters: lowercase letters, digits, or hyphens.");
-
-        if (ReservedUsernames.IsReserved(candidate))
-            return UsernameValidation.Invalid("That username is reserved.");
 
         return UsernameValidation.Ok();
     }

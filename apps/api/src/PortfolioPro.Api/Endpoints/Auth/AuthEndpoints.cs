@@ -63,12 +63,14 @@ public static class AuthEndpoints
 
     private static async Task<IResult> Signup(
         SignupRequest request,
-        UserContext user,
+        HttpContext http,
         UsernameService usernames,
         UserService users,
         IValidator<SignupRequest> validator,
         CancellationToken ct)
     {
+        var user = http.GetUser();
+
         var validation = await validator.ValidateAsync(request, ct);
         if (!validation.IsValid)
             return Results.ValidationProblem(validation.ToDictionary());
@@ -80,21 +82,24 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> Me(
-        UserContext user,
+        HttpContext http,
         UserService users,
         CancellationToken ct)
     {
+        var user = http.GetUser();
         var record = await users.GetByUidAsync(user.Uid, ct);
         return Results.Ok(MeResponse.From(user.Uid, user.Email, record));
     }
 
     private static async Task<IResult> ChangeUsername(
         ChangeUsernameRequest request,
-        UserContext user,
+        HttpContext http,
         UsernameService usernames,
         IValidator<ChangeUsernameRequest> validator,
         CancellationToken ct)
     {
+        var user = http.GetUser();
+
         var validation = await validator.ValidateAsync(request, ct);
         if (!validation.IsValid)
             return Results.ValidationProblem(validation.ToDictionary());
@@ -107,10 +112,11 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> DeleteAccount(
-        UserContext user,
+        HttpContext http,
         UserService users,
         CancellationToken ct)
     {
+        var user = http.GetUser();
         await users.SoftDeleteAsync(user.Uid, ct);
         return Results.NoContent();
     }

@@ -1,9 +1,7 @@
 namespace PortfolioPro.Api.Auth;
 
-public sealed record UserContext(string Uid, string Email, string? Username)
-{
-    // Minimal-API parameter binding: handlers can declare `UserContext user` and the
-    // RequireUser filter's HttpContext.Items entry is surfaced here.
-    public static ValueTask<UserContext?> BindAsync(HttpContext ctx) =>
-        ValueTask.FromResult(ctx.Items.TryGetValue(typeof(UserContext), out var v) ? v as UserContext : null);
-}
+public sealed record UserContext(string Uid, string Email, string? Username);
+// Endpoint handlers take HttpContext + call ctx.GetUser() (in RequireUserExtensions)
+// rather than receiving UserContext as a bound parameter: minimal-API parameter
+// binding runs BEFORE endpoint filters, so a BindAsync override would not see the
+// HttpContext.Items entry the RequireUser filter writes.

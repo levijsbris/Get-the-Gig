@@ -27,7 +27,9 @@ public sealed class LocalKeyIdTokenValidator(TestJwtIssuer issuer) : IIdTokenVal
         {
             principal = handler.ValidateToken(token, _params, out _);
         }
-        catch (SecurityTokenException ex)
+        // SecurityTokenException covers expiry/signature/issuer/audience failures,
+        // but malformed JWTs surface as ArgumentException from the token parser.
+        catch (Exception ex) when (ex is SecurityTokenException or ArgumentException)
         {
             throw new InvalidIdTokenException("Test token failed validation.", ex);
         }

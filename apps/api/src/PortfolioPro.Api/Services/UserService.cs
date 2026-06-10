@@ -22,8 +22,14 @@ public sealed class UserService(FirestoreDb firestore, ILogger<UserService> log)
             Email: snap.GetValue<string>("email"),
             CreatedAt: snap.GetValue<Timestamp>("createdAt"),
             UpdatedAt: snap.GetValue<Timestamp>("updatedAt"),
-            StorageBytesUsed: data.TryGetValue("storageBytesUsed", out var bytes) ? Convert.ToInt64(bytes) : 0L,
-            SoftDeletedAt: snap.TryGetValue("softDeletedAt", out Timestamp deletedAt) ? deletedAt : null);
+            StorageBytesUsed: data.TryGetValue("storageBytesUsed", out var bytes) && bytes is not null
+                ? Convert.ToInt64(bytes)
+                : 0L,
+            // softDeletedAt is stored as `null` for live users; TryGetValue<Timestamp>
+            // throws on null values because Timestamp is a non-nullable struct.
+            SoftDeletedAt: data.TryGetValue("softDeletedAt", out var raw) && raw is Timestamp ts
+                ? ts
+                : null);
     }
 
     public async Task SoftDeleteAsync(string uid, CancellationToken ct)
