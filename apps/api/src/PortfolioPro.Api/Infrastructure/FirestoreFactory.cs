@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+using Google.Api.Gax;
 
 namespace PortfolioPro.Api.Infrastructure;
 
@@ -11,7 +12,13 @@ public static class FirestoreFactory
             ?? config["GOOGLE_CLOUD_PROJECT"]
             ?? "portfoliopro-local";
 
-        // FirestoreDb honours FIRESTORE_EMULATOR_HOST automatically; no special handling needed here.
-        return FirestoreDb.Create(projectId);
+        // EmulatorOrProduction: if FIRESTORE_EMULATOR_HOST is set, talk to the
+        // emulator over an insecure channel; otherwise resolve ADC and use the real
+        // Firestore service. FirestoreDb.Create(projectId) ignores the env var.
+        return new FirestoreDbBuilder
+        {
+            ProjectId = projectId,
+            EmulatorDetection = EmulatorDetection.EmulatorOrProduction,
+        }.Build();
     }
 }

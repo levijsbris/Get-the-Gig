@@ -23,7 +23,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-FirebaseAppBootstrap.Initialize(builder.Configuration);
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    FirebaseAppBootstrap.Initialize(builder.Configuration);
+}
 builder.Services.AddSingleton(FirestoreFactory.Create(builder.Configuration));
 builder.Services.AddSingleton<IIdTokenValidator, FirebaseIdTokenValidator>();
 builder.Services.AddScoped<RequireUserFilter>();
