@@ -1,0 +1,63 @@
+using Google.Cloud.Firestore;
+using PortfolioPro.Api.Errors;
+
+namespace PortfolioPro.Api.Services;
+
+public sealed class UserService(FirestoreDb firestore, ILogger<UserService> log)
+{
+    private const string UsersCollection = "users";
+    private const string DeletionQueueCollection = "deletionQueue";
+    private static readonly TimeSpan SoftDeleteGrace = TimeSpan.FromDays(7);
+
+    public async Task<UserRecord?> GetByUidAsync(string uid, CancellationToken ct)
+    {
+        var snap = await firestore.Collection(UsersCollection).Document(uid).GetSnapshotAsync(ct);
+        if (!snap.Exists)
+            return null;
+
+        var data = snap.ToDictionary();
+        return new UserRecord(
+            Uid: snap.GetValue<string>("uid"),
+            Username: snap.GetValue<string>("username"),
+            Email: snap.GetValue<string>("email"),
+            CreatedAt: snap.GetValue<Timestamp>("createdAt"),
+            UpdatedAt: snap.GetValue<Timestamp>("updatedAt"),
+            StorageBytesUsed: data.TryGetValue("storageBytesUsed", out var bytes) ? Convert.ToInt64(bytes) : 0L,
+            SoftDeletedAt: snap.TryGetValue("softDeletedAt", out Timestamp deletedAt) ? deletedAt : null);
+    }
+
+    public async Task SoftDeleteAsync(string uid, CancellationToken ct)
+    {
+        var userDoc = firestore.Collection(UsersCollection).Document(uid);
+        var existing = await userDoc.GetSnapshotAsync(ct);
+        if (!existing.Exists)
+            throw new UserNotFoundException();
+
+        var now = Timestamp.GetCurrentTimestamp();
+        var scheduledFor = Timestamp.FromDateTime(DateTime.UtcNow.Add(SoftDeleteGrace));
+        var taskId = Guid.NewGuid().ToString("N");
+        var queueDoc = firestore.Collection(DeletionQueueCollection).Document(taskId);
+
+        var batch = firestore.StartBatch();
+        batch.Update(userDoc, new Dictionary<string, object>
+        {
+            ["softDeletedAt"] = now,
+            ["updatedAt"] = now,
+        });
+        batch.Create(queueDoc, new Dictionary<string, object>
+        {
+            ["kind"] = "user",
+            ["targetUid"] = uid,
+            ["targetId"] = uid,
+            ["scheduledFor"] = scheduledFor,
+        });
+        await batch.CommitAsync(ct);
+
+        // Phase 8 hook: also soft-delete every portfolio owned by this user, unpublish
+        // any that are live, and enqueue per-portfolio deletion tasks (see
+        // docs/publish-flow.md § Account deletion). No-op in Phase 1.
+
+        log.LogInformation("Soft-deleted user {Uid}; hard delete scheduled for {ScheduledFor}",
+            uid, scheduledFor.ToDateTime());
+    }
+}
