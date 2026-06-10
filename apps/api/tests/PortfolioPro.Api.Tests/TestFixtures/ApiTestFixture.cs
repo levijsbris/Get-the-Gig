@@ -13,12 +13,20 @@ namespace PortfolioPro.Api.Tests.TestFixtures;
 public sealed class ApiTestFixture : WebApplicationFactory<Program>
 {
     public const string ProjectId = "portfoliopro-test";
-    public const string FirestoreEmulatorHost = "localhost:8080";
+    public const string DefaultFirestoreEmulatorHost = "localhost:8080";
+
+    public string FirestoreEmulatorHost { get; }
 
     public TestJwtIssuer Jwt { get; } = new();
 
     public ApiTestFixture()
     {
+        // Honour an externally provided FIRESTORE_EMULATOR_HOST (e.g. firebase
+        // emulators:exec in CI may pick a different port); otherwise fall back to
+        // the docker-compose default.
+        FirestoreEmulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST")
+            ?? DefaultFirestoreEmulatorHost;
+
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         Environment.SetEnvironmentVariable("FIRESTORE_EMULATOR_HOST", FirestoreEmulatorHost);
         Environment.SetEnvironmentVariable("FIRESTORE_PROJECT_ID", ProjectId);

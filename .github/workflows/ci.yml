@@ -16,6 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Java (Firebase emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -30,6 +36,9 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile=false
 
+      - name: Install firebase-tools
+        run: npm install -g firebase-tools@13.29.1
+
       - name: Lint
         run: pnpm lint
 
@@ -39,8 +48,13 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test
-        run: pnpm test
+      - name: Test (under Firestore emulator)
+        run: |
+          firebase emulators:exec \
+            --only firestore \
+            --project portfoliopro-test \
+            --config infra/firebase.json \
+            "pnpm test"
 
   dotnet:
     name: .NET (build, test)
@@ -48,10 +62,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Java (Firebase emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node (for firebase-tools)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      - name: Install firebase-tools
+        run: npm install -g firebase-tools@13.29.1
 
       - name: Restore
         working-directory: apps/api
@@ -61,6 +89,10 @@ jobs:
         working-directory: apps/api
         run: dotnet build --configuration Release --no-restore
 
-      - name: Test
-        working-directory: apps/api
-        run: dotnet test --configuration Release --no-build --verbosity normal
+      - name: Test (under Firestore emulator)
+        run: |
+          firebase emulators:exec \
+            --only firestore \
+            --project portfoliopro-test \
+            --config infra/firebase.json \
+            "dotnet test apps/api/PortfolioPro.sln --configuration Release --no-build --verbosity normal"
