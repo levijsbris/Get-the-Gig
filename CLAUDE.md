@@ -24,8 +24,8 @@ portfoliopro/
 │   └── api/                   # ASP.NET Core 8 minimal API (Cloud Run)
 ├── packages/
 │   ├── snapshot-schema/       # Zod schemas + generated JSON Schema (source of truth)
-│   ├── renderer/              # Shared React component library used by editor + viewer
-│   ├── editor-kit/            # Editor-only wrappers: selection, drag, toolbars
+│   ├── renderer/              # Shared React component library used by editor + viewer (created Phase 4)
+│   ├── editor-kit/            # Editor-only wrappers: selection, drag, toolbars (created Phase 4)
 │   └── shared-types/          # TypeScript types derived from snapshot-schema
 ├── infra/
 │   ├── firestore.rules
