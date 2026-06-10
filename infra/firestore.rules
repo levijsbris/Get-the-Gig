@@ -1,8 +1,62 @@
 rules_version = '2';
-// Phase 0 placeholder: deny-by-default. Real rules land in Phase 1.
+
+// Phase 1 — auth & tenancy. Subtrees for portfolios/assets/viewerPasswords are
+// allowed here but no Phase 1 endpoint reads or writes them yet; their presence
+// keeps the rules in sync with docs/data-model.md so Phase 2+ can drop endpoints
+// in without rule churn.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+
+    // Per-user subtree — only the owner can touch it.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+      // Hard delete only via backend Admin SDK (bypasses rules); clients soft-delete
+      // through /api/auth/account.
+      allow delete: if false;
+
+      match /portfolios/{pid} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+
+        match /viewerPasswords/{pwid} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+      }
+
+      match /assets/{aid} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Public read so the signup form can check availability; server-side only writes.
+    match /usernames/{username} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Public viewer lookup index — public read, server-side only writes.
+    match /portfolioRoutes/{routeId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /attempts/{ipBucket} {
+        allow read, write: if false;
+      }
+    }
+
+    // Curated templates — public read, seeded out-of-band by tools/seed-templates.
+    match /templates/{templateId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Backend-only collections.
+    match /deletionQueue/{taskId} {
       allow read, write: if false;
     }
   }
