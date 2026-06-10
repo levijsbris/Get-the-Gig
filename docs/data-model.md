@@ -15,7 +15,7 @@ Uniqueness lock. Document ID is the username (lowercased, normalised). Used to a
 }
 ```
 
-Writes are always transactional with the corresponding `users/{uid}` write. The username string must match `^[a-z0-9-]{3,30}$` and not appear in the reserved word list (`admin`, `api`, `login`, `signup`, `www`, `portfolio`, `portfoliopro`, `support`, `help`, `static`, `assets`, `v`).
+Writes are always transactional with the corresponding `users/{uid}` write. The username string must match `^[a-z0-9-]{3,30}$` and not appear in the reserved word list (`admin`, `api`, `login`, `signup`, `www`, `portfolio`, `portfoliopro`, `support`, `help`, `static`, `assets`, `v`). `v` is reserved because the viewer-side API uses `/api/v/{username}/{slug}/...` paths (e.g. the password unlock endpoint); a username of `v` would collide. The authoritative list lives in `apps/api/src/PortfolioPro.Api/Auth/ReservedUsernames.cs` from Phase 1 onward.
 
 ### `/users/{uid}`
 

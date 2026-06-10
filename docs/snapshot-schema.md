@@ -219,7 +219,7 @@ type Theme = {
 type TypeStyle = {
   family: 'heading' | 'body';
   size: number;          // px at desktop breakpoint
-  weight: 100 | 200 | ... | 900;
+  weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
   lineHeight: number;    // multiplier, e.g. 1.4
   letterSpacing?: number;
   color: keyof Theme['colors'];  // refers to palette slot
