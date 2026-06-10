@@ -169,7 +169,7 @@ Add new composite indexes to `infra/firestore.indexes.json`. The emulator and pr
 
 Current composite indexes:
 
-- `portfolios` collection group, `(uid asc, isPublished asc, updatedAt desc)` — for admin/cross-portfolio listings (not currently used; remove if unused before deploy).
+- `portfolios` collection group, `(uid asc, isPublished asc, updatedAt desc)` — for admin/cross-portfolio listings. Audit before Phase 11 deploy: if no read path uses it by then, delete the entry.
 - `viewerPasswords` collection group, `(revokedAt asc, expiresAt asc)` — for the unlock check.
 - `assets` collection group, `(uid asc, softDeletedAt asc, createdAt desc)` — for asset library listings.
 - `templates`, `(kind asc, category asc, name asc)` — for the template gallery (filter by kind, then category).
@@ -197,7 +197,7 @@ match /usernames/{username} {
 }
 ```
 
-Rules are tested via the Firebase emulator's rules test SDK. See `infra/firestore.rules.test.ts`. Every new rule needs at least one passing and one failing test.
+Rules are tested via the Firebase emulator's rules test SDK. See `infra/firestore.rules.test.ts`. Every new rule needs at least one passing and one failing test. (The rules-test harness — `@firebase/rules-unit-testing`, the `infra/firestore.rules.test.ts` file, and the CI step that runs it — lands with the first real rule in Phase 1. Until then, `infra/firestore.rules` is the deny-by-default placeholder from Phase 0.)
 
 ## Cost-aware patterns
 

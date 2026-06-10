@@ -7,6 +7,8 @@ description: Use whenever adding, modifying, or reviewing a backend HTTP endpoin
 
 Every endpoint in `apps/api` follows the same shape. This skill captures it so endpoints are consistent, secure, and observable without re-deriving the pattern each time.
 
+> **Phase availability.** This skill describes the *target* shape of the backend. Several files it names — `RequireUser` filter, `UserContext`, `SignedUrlService`, `PasswordUnlockService`, `AttemptRateLimiter`, `SnapshotValidator`, `AssetReferenceWalker`, `TenancyTests`, the test JWT-signing fixture — land across Phases 1–9 (see `docs/build-plan.md`). If you're working on a phase that hasn't introduced one of these yet, create it in the path shown here so later phases find it where this skill says it should be. Don't grep for them in Phase 0; only `apps/api/src/PortfolioPro.Api/Endpoints/HealthEndpoints.cs` exists.
+
 ## Anatomy of an endpoint
 
 An endpoint has six parts:
