@@ -1,4 +1,10 @@
+using FluentValidation;
+using PortfolioPro.Api.Auth;
 using PortfolioPro.Api.Endpoints;
+using PortfolioPro.Api.Endpoints.Auth;
+using PortfolioPro.Api.Errors;
+using PortfolioPro.Api.Infrastructure;
+using PortfolioPro.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +20,26 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+FirebaseAppBootstrap.Initialize(builder.Configuration);
+builder.Services.AddSingleton(FirestoreFactory.Create(builder.Configuration));
+builder.Services.AddSingleton<IIdTokenValidator, FirebaseIdTokenValidator>();
+builder.Services.AddScoped<RequireUserFilter>();
+
+builder.Services.AddScoped<UsernameService>();
+builder.Services.AddScoped<UserService>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.UseCors(EditorCorsPolicy);
 
 app.MapHealthEndpoints();
+app.MapAuthEndpoints();
 
 app.Run();
 
