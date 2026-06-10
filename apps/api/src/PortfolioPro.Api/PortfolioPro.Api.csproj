@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>PortfolioPro.Api</RootNamespace>
+    <AssemblyName>PortfolioPro.Api</AssemblyName>
+    <UserSecretsId>portfoliopro-api-dev</UserSecretsId>
+  </PropertyGroup>
+</Project>
