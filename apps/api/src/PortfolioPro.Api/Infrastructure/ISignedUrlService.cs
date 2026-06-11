@@ -12,9 +12,19 @@ public interface ISignedUrlService
     /// production GCS V4 signed URLs use PUT.
     /// </summary>
     SignedUploadUrl MintUploadUrl(string uid, string key, string contentType);
+
+    /// <summary>
+    /// Mints a time-limited download URL for the given storage key. Like
+    /// MintUploadUrl, refuses any key that doesn't start with users/{uid}/.
+    /// TTL is bounded by CLAUDE.md's "≤ 15 minutes" rule; callers enforce
+    /// the cap by passing an appropriate TimeSpan.
+    /// </summary>
+    SignedDownloadUrl MintDownloadUrl(string uid, string key, TimeSpan ttl);
 }
 
 public sealed record SignedUploadUrl(Uri Url, string Method);
+
+public sealed record SignedDownloadUrl(Uri Url, DateTimeOffset ExpiresAt);
 
 public sealed class InvalidStorageKeyException : InvalidOperationException
 {

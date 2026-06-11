@@ -45,6 +45,12 @@ public static class AssetEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        group.MapPost("/preview-urls", PreviewUrls)
+            .WithName("AssetPreviewUrls")
+            .Produces<PreviewUrlsResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status400BadRequest);
+
         return app;
     }
 
@@ -145,5 +151,23 @@ public static class AssetEndpoints
         var user = http.GetUser();
         var record = await assets.RestoreAsync(user.Uid, portfolioId, assetId, ct);
         return Results.Ok(AssetSummary.From(record));
+    }
+
+    private static async Task<IResult> PreviewUrls(
+        string portfolioId,
+        PreviewUrlsRequest request,
+        HttpContext http,
+        AssetService assets,
+        IValidator<PreviewUrlsRequest> validator,
+        CancellationToken ct)
+    {
+        var user = http.GetUser();
+        var validation = await validator.ValidateAsync(request, ct);
+        if (!validation.IsValid)
+            return Results.ValidationProblem(validation.ToDictionary());
+
+        var urls = await assets.MintPreviewUrlsAsync(user.Uid, portfolioId, request.AssetIds, ct);
+        return Results.Ok(new PreviewUrlsResponse(
+            urls.Select(u => new PreviewUrlEntry(u.AssetId, u.Url.ToString(), u.ExpiresAt)).ToList()));
     }
 }

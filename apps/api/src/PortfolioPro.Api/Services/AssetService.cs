@@ -32,6 +32,13 @@ public sealed class AssetService(
         long PortfolioBytesQuota,
         bool WarnPortfolioQuota);
 
+    public sealed record AssetPreviewUrl(string AssetId, Uri Url, DateTimeOffset ExpiresAt);
+
+    // CLAUDE.md caps signed-URL TTL at 15 minutes. We mint with a small buffer
+    // (14m) so the response.expiresAt the client caches is slightly conservative.
+    private static readonly TimeSpan PreviewUrlTtl = TimeSpan.FromMinutes(14);
+    private const int MaxPreviewUrlsPerRequest = 100;
+
     public async Task<UploadRequestResult> RequestUploadAsync(
         string uid,
         string portfolioId,
@@ -318,6 +325,53 @@ public sealed class AssetService(
         log.LogInformation(
             "Soft-deleted asset {AssetId} for portfolio {PortfolioId} (freed {Bytes} bytes)",
             assetId, portfolioId, byteSize);
+    }
+
+    public async Task<IReadOnlyList<AssetPreviewUrl>> MintPreviewUrlsAsync(
+        string uid, string portfolioId, IReadOnlyList<string> assetIds, CancellationToken ct)
+    {
+        if (assetIds.Count == 0)
+            return Array.Empty<AssetPreviewUrl>();
+        if (assetIds.Count > MaxPreviewUrlsPerRequest)
+            throw new PreviewUrlBatchTooLargeException(MaxPreviewUrlsPerRequest);
+
+        var refs = assetIds
+            .Distinct(StringComparer.Ordinal)
+            .Select(id => firestore.Collection(UsersCollection).Document(uid)
+                .Collection(AssetsCollection).Document(id))
+            .ToList();
+        var snaps = await firestore.GetAllSnapshotsAsync(refs, ct);
+
+        var results = new List<AssetPreviewUrl>(snaps.Count);
+        foreach (var snap in snaps)
+        {
+            if (!snap.Exists) continue;
+            // Tenancy: every doc was read from /users/{uid}/assets so it already
+            // belongs to the caller. But the ownerPortfolioId must match the URL
+            // so a user can't preview an asset that belongs to a different one of
+            // their own portfolios — assets are per-portfolio in our model.
+            if (!string.Equals(snap.GetValue<string>("ownerPortfolioId"), portfolioId, StringComparison.Ordinal))
+                continue;
+
+            var storagePath = snap.GetValue<string>("storagePath");
+            var key = ExtractKeyFromGsPath(storagePath);
+            var signed = signedUrls.MintDownloadUrl(uid, key, PreviewUrlTtl);
+            results.Add(new AssetPreviewUrl(snap.GetValue<string>("id"), signed.Url, signed.ExpiresAt));
+        }
+        return results;
+    }
+
+    /// <summary>"gs://bucket/key/with/slashes" → "key/with/slashes"</summary>
+    private static string ExtractKeyFromGsPath(string gsPath)
+    {
+        const string prefix = "gs://";
+        if (!gsPath.StartsWith(prefix, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Unexpected storagePath shape: '{gsPath}'");
+        var afterPrefix = gsPath[prefix.Length..];
+        var firstSlash = afterPrefix.IndexOf('/');
+        if (firstSlash < 0)
+            throw new InvalidOperationException($"storagePath missing key segment: '{gsPath}'");
+        return afterPrefix[(firstSlash + 1)..];
     }
 
     private async Task<DocumentSnapshot> ReadActivePortfolioAsync(
