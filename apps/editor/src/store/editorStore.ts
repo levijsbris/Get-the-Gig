@@ -51,13 +51,14 @@ export interface EditorState {
 
   // section operations
   addSection: () => void;
+  addSectionAt: (pageId: string, index: number) => void;
   setSectionLayout: (sectionId: string, columns: 1 | 2 | 3 | 4) => void;
   moveSection: (oldIndex: number, newIndex: number) => void;
   duplicateSection: (sectionId: string) => void;
   deleteSection: (sectionId: string) => void;
 
   // component operations
-  addTextComponent: (sectionId: string, columnIndex: number) => void;
+  addTextComponent: (sectionId: string, columnIndex: number, insertIndex?: number) => void;
   moveComponent: (
     sectionId: string,
     fromColumn: number,
@@ -204,6 +205,16 @@ export const useEditorStore = create<EditorState>((set, get) => {
         }),
       ),
 
+    addSectionAt: (pageId, index) =>
+      set((state) =>
+        commit(state, (draft) => {
+          const page = draft.pages.find((p) => p.id === pageId);
+          if (!page) return;
+          const clamped = Math.max(0, Math.min(index, page.sections.length));
+          page.sections.splice(clamped, 0, createSection(1));
+        }),
+      ),
+
     setSectionLayout: (sectionId, columns) =>
       set((state) =>
         commit(state, (draft) => {
@@ -262,14 +273,20 @@ export const useEditorStore = create<EditorState>((set, get) => {
         }),
       ),
 
-    addTextComponent: (sectionId, columnIndex) =>
+    addTextComponent: (sectionId, columnIndex, insertIndex) =>
       set((state) =>
         commit(state, (draft) => {
           const target = findSection(draft, sectionId);
           if (!target) return;
           const column = target.section.columns[columnIndex];
           if (!column) return;
-          column.components.push(createTextComponent());
+          const component = createTextComponent();
+          if (insertIndex === undefined) {
+            column.components.push(component);
+          } else {
+            const clamped = Math.max(0, Math.min(insertIndex, column.components.length));
+            column.components.splice(clamped, 0, component);
+          }
         }),
       ),
 

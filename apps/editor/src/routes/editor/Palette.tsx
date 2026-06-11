@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
 import { selectionInsertTarget } from '../../store/selection';
 import { useEditorStore } from '../../store/editorStore';
+import type { CSSProperties, KeyboardEvent } from 'react';
 
 /**
  * Phase 4 palette. Two insertion paths:
@@ -28,13 +29,7 @@ export function Palette() {
     <aside className="flex w-56 flex-col gap-3 border-l border-slate-200 bg-slate-50 p-4">
       <section>
         <h2 className="mb-2 text-xs uppercase tracking-wider text-slate-500">Sections</h2>
-        <button
-          type="button"
-          onClick={addSection}
-          className="w-full rounded-md border border-slate-300 bg-white p-3 text-left text-sm hover:bg-slate-50"
-        >
-          + Add empty section
-        </button>
+        <DraggablePaletteSection onClick={addSection} />
       </section>
       <section>
         <h2 className="mb-2 text-xs uppercase tracking-wider text-slate-500">Components</h2>
@@ -46,6 +41,32 @@ export function Palette() {
         />
       </section>
     </aside>
+  );
+}
+
+function DraggablePaletteSection({ onClick }: { onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: 'palette:section' });
+  const style: CSSProperties = { opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onClick}
+      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+      {...attributes}
+      {...listeners}
+      className="w-full cursor-grab select-none rounded-md border border-slate-300 bg-white p-3 text-left text-sm transition hover:bg-slate-50"
+    >
+      <div className="font-medium text-slate-900">+ Section</div>
+      <div className="mt-1 text-xs text-slate-500">
+        Click to append, or drag between sections
+      </div>
+    </div>
   );
 }
 

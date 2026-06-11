@@ -66,6 +66,38 @@ describe('editorStore — section + component mutations', () => {
     expect(section.columns).toHaveLength(1);
   });
 
+  it('addSectionAt inserts at the given index and clamps out-of-range values', () => {
+    const store = useEditorStore.getState();
+    const pageId = getSnapshot().pages[0]!.id;
+    store.addSection();
+    store.addSection();
+    const [a, b] = getSnapshot().pages[0]!.sections.map((s) => s.id);
+
+    // Insert at index 1 (between a and b).
+    store.addSectionAt(pageId, 1);
+    const afterInsert = getSnapshot().pages[0]!.sections.map((s) => s.id);
+    expect(afterInsert).toHaveLength(3);
+    expect(afterInsert[0]).toBe(a);
+    expect(afterInsert[2]).toBe(b);
+
+    // Out-of-range index clamps to the end (no throw).
+    store.addSectionAt(pageId, 999);
+    expect(getSnapshot().pages[0]!.sections).toHaveLength(4);
+
+    // Negative index clamps to 0 (prepended).
+    store.addSectionAt(pageId, -5);
+    const finalIds = getSnapshot().pages[0]!.sections.map((s) => s.id);
+    expect(finalIds).toHaveLength(5);
+    expect(finalIds[1]).toBe(a);
+  });
+
+  it('addSectionAt is a no-op for an unknown page id', () => {
+    const store = useEditorStore.getState();
+    const before = getSnapshot();
+    store.addSectionAt('nope', 0);
+    expect(getSnapshot()).toBe(before);
+  });
+
   it('setSectionLayout resizes columns and merges drops into the last surviving column', () => {
     const store = useEditorStore.getState();
     store.addSection();
@@ -94,6 +126,38 @@ describe('editorStore — section + component mutations', () => {
     const componentA = sections[0]!.columns[0]!.components[0]! as TextComponent;
     const componentB = sections[1]!.columns[0]!.components[0]! as TextComponent;
     expect(componentA.id).not.toBe(componentB.id);
+  });
+
+  it('addTextComponent inserts at the given index and clamps', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0); // index 0 (appended)
+    store.addTextComponent(sectionId, 0); // index 1 (appended)
+    const ids = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+
+    // Insert between the two existing components.
+    store.addTextComponent(sectionId, 0, 1);
+    const afterInsert = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+    expect(afterInsert).toHaveLength(3);
+    expect(afterInsert[0]).toBe(ids[0]);
+    expect(afterInsert[2]).toBe(ids[1]);
+
+    // Out-of-range index clamps to end.
+    store.addTextComponent(sectionId, 0, 999);
+    expect(getSnapshot().pages[0]!.sections[0]!.columns[0]!.components).toHaveLength(4);
+
+    // Negative clamps to 0.
+    store.addTextComponent(sectionId, 0, -3);
+    const finalIds = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+    expect(finalIds).toHaveLength(5);
+    expect(finalIds[1]).toBe(ids[0]);
   });
 
   it('addTextComponent + moveComponent moves between columns', () => {
