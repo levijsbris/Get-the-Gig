@@ -167,6 +167,22 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)
 
+  packages/renderer:
+    dependencies:
+      '@portfoliopro/snapshot-schema':
+        specifier: workspace:*
+        version: link:../snapshot-schema
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.28
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/shared-types:
     devDependencies:
       typescript:
