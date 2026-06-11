@@ -1,20 +1,9 @@
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCenter,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { EditableShell, TextEditable } from '@portfoliopro/editor-kit';
 import { ThemeProvider, useTheme } from '@portfoliopro/renderer';
 import { type Section } from '@portfoliopro/snapshot-schema';
-import { useState } from 'react';
 import { useEditorStore, type Viewport } from '../../store/editorStore';
 
 const VIEWPORT_WIDTHS: Record<Viewport, number> = {
@@ -23,71 +12,21 @@ const VIEWPORT_WIDTHS: Record<Viewport, number> = {
   mobile: 380,
 };
 
+/**
+ * Canvas renders the structural editor surface. dnd-kit infrastructure
+ * (DndContext, sensors, drag handlers, DragOverlay) lives at the Editor route
+ * level so the palette can drag items into the canvas's columns. This
+ * component is purely presentational w.r.t. drag wiring.
+ */
 export function Canvas() {
   const snapshot = useEditorStore((s) => s.history.entries[s.history.index]!);
   const pageId = useEditorStore((s) => s.pageId);
   const setSelection = useEditorStore((s) => s.setSelection);
-  const moveSection = useEditorStore((s) => s.moveSection);
-  const moveComponent = useEditorStore((s) => s.moveComponent);
   const viewport = useEditorStore((s) => s.viewport);
   const selection = useEditorStore((s) => s.selection);
-  const [draggingComponentId, setDraggingComponentId] = useState<string | null>(null);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const page = snapshot.pages.find((p) => p.id === pageId) ?? snapshot.pages[0];
   if (!page) return null;
-  // Capture page in a const that's narrowed for the closures below — TS won't
-  // narrow `page` inside callback bodies otherwise.
-  const activePage = page;
-
-  function onDragStart(event: DragStartEvent) {
-    const id = String(event.active.id);
-    if (id.startsWith('component:')) setDraggingComponentId(id);
-  }
-
-  function onDragEnd(event: DragEndEvent) {
-    setDraggingComponentId(null);
-    const { active, over } = event;
-    if (!over) return;
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    if (activeId.startsWith('section:') && overId.startsWith('section:')) {
-      const oldIndex = activePage.sections.findIndex(
-        (s) => s.id === activeId.slice('section:'.length),
-      );
-      const newIndex = activePage.sections.findIndex(
-        (s) => s.id === overId.slice('section:'.length),
-      );
-      if (oldIndex >= 0 && newIndex >= 0) moveSection(oldIndex, newIndex);
-      return;
-    }
-
-    if (activeId.startsWith('component:')) {
-      const sourcePath = parseComponentId(activeId);
-      if (!sourcePath) return;
-      // Drop target may be either a sibling component (component:...) or an
-      // empty column (column:...). Resolve to a column + index either way.
-      const targetPath = resolveDropTarget(activePage.sections, overId, sourcePath);
-      if (!targetPath) return;
-      moveComponent(
-        sourcePath.sectionId,
-        sourcePath.columnIndex,
-        sourcePath.componentIndex,
-        targetPath.columnIndex,
-        targetPath.componentIndex,
-      );
-    }
-  }
-
-  const draggingComponent = (() => {
-    if (!draggingComponentId) return null;
-    const path = parseComponentId(draggingComponentId);
-    if (!path) return null;
-    const section = activePage.sections.find((s) => s.id === path.sectionId);
-    return section?.columns[path.columnIndex]?.components[path.componentIndex] ?? null;
-  })();
 
   return (
     <ThemeProvider theme={snapshot.theme}>
@@ -96,42 +35,24 @@ export function Canvas() {
           className="mx-auto rounded-lg border border-slate-200 bg-white shadow-sm transition-all"
           style={{ maxWidth: VIEWPORT_WIDTHS[viewport], minHeight: '60vh' }}
         >
-          {activePage.sections.length === 0 ? (
+          {page.sections.length === 0 ? (
             <div className="p-12 text-center text-sm text-slate-400">
               Empty page. Use the palette to add a section.
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
+            <SortableContext
+              items={page.sections.map((s) => `section:${s.id}`)}
+              strategy={verticalListSortingStrategy}
             >
-              <SortableContext
-                items={activePage.sections.map((s) => `section:${s.id}`)}
-                strategy={verticalListSortingStrategy}
-              >
-                {activePage.sections.map((section) => (
-                  <SortableSection
-                    key={section.id}
-                    section={section}
-                    pageId={page.id}
-                    selected={selection?.kind === 'section' && selection.sectionId === section.id}
-                  />
-                ))}
-              </SortableContext>
-              <DragOverlay>
-                {draggingComponent ? (
-                  <div className="rounded-md border border-sky-400 bg-white p-2 shadow-lg">
-                    <TextEditable
-                      component={draggingComponent as never}
-                      selected={false}
-                      onSelect={() => {}}
-                    />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+              {page.sections.map((section) => (
+                <SortableSection
+                  key={section.id}
+                  section={section}
+                  pageId={page.id}
+                  selected={selection?.kind === 'section' && selection.sectionId === section.id}
+                />
+              ))}
+            </SortableContext>
           )}
         </div>
       </div>
@@ -201,6 +122,19 @@ function SortableSection({
                 <DroppableColumn
                   id={`column:${section.id}:${columnIndex}`}
                   isEmpty={column.components.length === 0}
+                  selected={
+                    selectionState?.kind === 'column' &&
+                    selectionState.sectionId === section.id &&
+                    selectionState.columnIndex === columnIndex
+                  }
+                  onSelect={() =>
+                    setSelection({
+                      kind: 'column',
+                      pageId,
+                      sectionId: section.id,
+                      columnIndex,
+                    })
+                  }
                 >
                   {column.components.map((component, componentIndex) => (
                     <SortableComponent
@@ -232,23 +166,42 @@ function SortableSection({
 function DroppableColumn({
   id,
   isEmpty,
+  selected,
+  onSelect,
   children,
 }: {
   id: string;
   isEmpty: boolean;
+  selected: boolean;
+  onSelect: () => void;
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
+  // Visible state combinations:
+  //   isOver    sky-100 background + 2px solid sky-500 inset ring
+  //   selected  sky-50 background  + 2px solid sky-500 inset ring
+  //   neither   transparent + hover background
+  const stateClass = isOver
+    ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset'
+    : selected
+      ? 'bg-sky-50 ring-2 ring-sky-500 ring-inset'
+      : 'ring-2 ring-transparent ring-inset hover:bg-slate-50';
   return (
     <div
       ref={setNodeRef}
-      className={`flex min-h-[60px] flex-col gap-2 rounded transition-colors ${
-        isOver ? 'bg-sky-50' : ''
-      }`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect();
+      }}
+      className={`flex min-h-[80px] cursor-pointer flex-col gap-2 rounded p-2 transition-colors ${stateClass}`}
     >
       {isEmpty ? (
-        <div className="flex min-h-[60px] items-center justify-center rounded border border-dashed border-slate-200 text-center text-xs text-slate-400">
-          Drop here
+        <div
+          className={`flex min-h-[60px] items-center justify-center rounded border-2 border-dashed text-center text-xs ${
+            selected ? 'border-sky-500 font-medium text-sky-700' : 'border-slate-300 text-slate-400'
+          }`}
+        >
+          {selected ? '✓ Column selected — use the palette' : 'Click to select, or drop here'}
         </div>
       ) : (
         children
@@ -306,48 +259,4 @@ function SortableComponent({
       />
     </div>
   );
-}
-
-interface ComponentPath {
-  sectionId: string;
-  columnIndex: number;
-  componentIndex: number;
-}
-
-function parseComponentId(id: string): ComponentPath | null {
-  // component:{sectionId}:{columnIndex}:{componentIndex}:{componentId}
-  if (!id.startsWith('component:')) return null;
-  const parts = id.slice('component:'.length).split(':');
-  if (parts.length < 4) return null;
-  const [sectionId, columnIndex, componentIndex] = parts;
-  if (!sectionId || columnIndex === undefined || componentIndex === undefined) return null;
-  return {
-    sectionId,
-    columnIndex: Number(columnIndex),
-    componentIndex: Number(componentIndex),
-  };
-}
-
-function resolveDropTarget(
-  sections: Section[],
-  overId: string,
-  source: ComponentPath,
-): ComponentPath | null {
-  if (overId.startsWith('component:')) {
-    const target = parseComponentId(overId);
-    if (!target) return null;
-    return target;
-  }
-  if (overId.startsWith('column:')) {
-    // column:{sectionId}:{columnIndex} — drop at the end of the column.
-    const [, sectionId, columnIndexRaw] = overId.split(':');
-    if (!sectionId || columnIndexRaw === undefined) return null;
-    const section = sections.find((s) => s.id === sectionId);
-    if (!section) return null;
-    const columnIndex = Number(columnIndexRaw);
-    const column = section.columns[columnIndex];
-    if (!column) return null;
-    return { sectionId, columnIndex, componentIndex: column.components.length };
-  }
-  return source;
 }

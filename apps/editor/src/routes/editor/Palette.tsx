@@ -7,10 +7,15 @@ import { useEditorStore } from '../../store/editorStore';
  *
  *   1. Click "+ Text" → inserts into the column derived from the current
  *      selection (section → column 0; column or component → that column).
- *      Disabled when nothing is selected.
+ *      No-op when nothing is selected, with a hint shown below the button.
  *
  *   2. Drag "+ Text" → drops into any column droppable on the canvas (works
  *      regardless of selection). Powered by the editor-level DndContext.
+ *
+ * IMPORTANT: the draggable surface MUST NOT be an HTML <button disabled> — a
+ * disabled button receives no pointer events at the browser level, which
+ * prevents dnd-kit from ever seeing pointerdown. Use a non-disabled div with
+ * role="button" instead, and gate the click handler in JS.
  */
 export function Palette() {
   const addSection = useEditorStore((s) => s.addSection);
@@ -39,11 +44,6 @@ export function Palette() {
             if (insertTarget) addTextComponent(insertTarget.sectionId, insertTarget.columnIndex);
           }}
         />
-        {!insertTarget ? (
-          <p className="mt-2 text-xs text-slate-400">
-            Select a column to insert into, or drag the card onto one.
-          </p>
-        ) : null}
       </section>
     </aside>
   );
@@ -54,23 +54,32 @@ function DraggablePaletteText({ enabled, onClick }: { enabled: boolean; onClick:
     id: 'palette:text',
   });
   return (
-    <button
+    <div
       ref={setNodeRef}
-      type="button"
-      disabled={!enabled && !isDragging}
-      onClick={onClick}
+      onClick={() => {
+        if (enabled) onClick();
+      }}
+      onKeyDown={(event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && enabled) {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       {...attributes}
       {...listeners}
-      className={`w-full cursor-grab rounded-md border border-slate-300 bg-white p-3 text-left text-sm transition ${
+      // dnd-kit's attributes provide role / tabIndex / aria-disabled; we add
+      // a more accurate aria-disabled in case enabled === false.
+      aria-disabled={!enabled}
+      className={`w-full cursor-grab select-none rounded-md border border-slate-300 bg-white p-3 text-left text-sm transition ${
         isDragging ? 'opacity-40' : 'hover:bg-slate-50'
-      } disabled:cursor-not-allowed disabled:opacity-50`}
+      } ${!enabled ? 'opacity-60' : ''}`}
     >
-      + Text
-      {!enabled ? (
-        <span className="block text-xs text-slate-400">
-          Click after selecting a column, or drag here
-        </span>
-      ) : null}
-    </button>
+      <div className="font-medium text-slate-900">+ Text</div>
+      <div className="mt-1 text-xs text-slate-500">
+        {enabled
+          ? 'Click to insert, or drag onto a column'
+          : 'Drag onto any column, or select one and click'}
+      </div>
+    </div>
   );
 }

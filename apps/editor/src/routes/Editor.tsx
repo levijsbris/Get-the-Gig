@@ -1,4 +1,14 @@
-import { useEffect } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDraftAutosave } from '../hooks/useDraftAutosave';
 import { useEditorStore } from '../store/editorStore';
@@ -7,6 +17,7 @@ import { ContextToolbar } from './editor/ContextToolbar';
 import { PageTabs } from './editor/PageTabs';
 import { Palette } from './editor/Palette';
 import { Toolbar } from './editor/Toolbar';
+import { parseColumnId, parseComponentId, resolveComponentDropTarget } from './editor/dnd';
 
 export function Editor() {
   const { id: portfolioId } = useParams<{ id: string }>();
@@ -16,12 +27,12 @@ export function Editor() {
   const redo = useEditorStore((s) => s.redo);
 
   // VERSION MARKER — temporary, lets the user verify they're on the latest
-  // phase-4 build with column selection + palette drag. Remove once the
-  // features are confirmed visible.
+  // phase-4 build. Increment the suffix on any subsequent fix so a stale tab is
+  // easy to spot.
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.log(
-      '[PortfolioPro editor] build marker: column-select + palette-drag (commit 45c282c+)',
+      '[PortfolioPro editor] BUILD MARKER v3 — DndContext lifted to editor; DroppableColumn wired for selection',
     );
   }, []);
 
@@ -73,10 +84,96 @@ export function Editor() {
       <Toolbar saveStatus={saveStatus} />
       <PageTabs />
       <ContextToolbar />
+      <EditorSurface />
+    </div>
+  );
+}
+
+/**
+ * Single DndContext wrapping both the Canvas and the Palette so palette items
+ * can drag into the canvas's columns. Drag dispatch lives here so it can see
+ * the union of palette ids and canvas ids; Canvas + Palette are purely
+ * presentational w.r.t. drag wiring.
+ */
+function EditorSurface() {
+  const snapshot = useEditorStore((s) => s.history.entries[s.history.index]!);
+  const pageId = useEditorStore((s) => s.pageId);
+  const moveSection = useEditorStore((s) => s.moveSection);
+  const moveComponent = useEditorStore((s) => s.moveComponent);
+  const addTextComponent = useEditorStore((s) => s.addTextComponent);
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  function onDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
+  function onDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+    const aid = String(active.id);
+    const oid = String(over.id);
+
+    const page = snapshot.pages.find((p) => p.id === pageId);
+    if (!page) return;
+
+    // Palette → column (or palette → component-adjacent).
+    if (aid === 'palette:text') {
+      let target = parseColumnId(oid);
+      if (!target) {
+        const cmp = parseComponentId(oid);
+        if (cmp) target = { sectionId: cmp.sectionId, columnIndex: cmp.columnIndex };
+      }
+      if (target) addTextComponent(target.sectionId, target.columnIndex);
+      return;
+    }
+
+    // Section reorder.
+    if (aid.startsWith('section:') && oid.startsWith('section:')) {
+      const oldIndex = page.sections.findIndex((s) => s.id === aid.slice('section:'.length));
+      const newIndex = page.sections.findIndex((s) => s.id === oid.slice('section:'.length));
+      if (oldIndex >= 0 && newIndex >= 0) moveSection(oldIndex, newIndex);
+      return;
+    }
+
+    // Component move (same section, cross-column allowed).
+    if (aid.startsWith('component:')) {
+      const source = parseComponentId(aid);
+      if (!source) return;
+      const target = resolveComponentDropTarget(page.sections, oid, source);
+      if (!target) return;
+      moveComponent(
+        source.sectionId,
+        source.columnIndex,
+        source.componentIndex,
+        target.columnIndex,
+        target.componentIndex,
+      );
+    }
+  }
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
       <div className="flex flex-1 overflow-hidden">
         <Canvas />
         <Palette />
       </div>
-    </div>
+      <DragOverlay>
+        {activeId === 'palette:text' ? (
+          <div className="rounded-md border border-sky-400 bg-white p-3 text-sm shadow-lg">
+            + Text
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
