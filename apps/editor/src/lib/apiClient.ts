@@ -58,5 +58,9 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 }
 
 function isProblemDetails(value: unknown): value is ProblemDetails {
-  return typeof value === 'object' && value !== null && ('title' in value || 'status' in value || 'detail' in value);
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    ('title' in value || 'status' in value || 'detail' in value)
+  );
 }

@@ -34,7 +34,9 @@ beforeEach(async () => {
   await env.clearFirestore();
 });
 
-async function seedAsAdmin(write: (ctx: ReturnType<RulesTestEnvironment['authenticatedContext']>) => Promise<void>) {
+async function seedAsAdmin(
+  write: (ctx: ReturnType<RulesTestEnvironment['authenticatedContext']>) => Promise<void>,
+) {
   await env.withSecurityRulesDisabled(async (ctx) => {
     // Cast: withSecurityRulesDisabled gives the same firestore shape we use.
     await write(ctx as unknown as ReturnType<RulesTestEnvironment['authenticatedContext']>);
@@ -56,7 +58,11 @@ describe('/users/{uid}', () => {
 
   it('other authenticated user cannot read user A doc', async () => {
     await seedAsAdmin(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'users/alice'), { uid: 'alice', username: 'a', email: 'a@b' });
+      await setDoc(doc(ctx.firestore(), 'users/alice'), {
+        uid: 'alice',
+        username: 'a',
+        email: 'a@b',
+      });
     });
     const bob = env.authenticatedContext('bob').firestore();
     await assertFails(getDoc(doc(bob, 'users/alice')));
@@ -64,7 +70,11 @@ describe('/users/{uid}', () => {
 
   it('anonymous request cannot read user docs', async () => {
     await seedAsAdmin(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'users/alice'), { uid: 'alice', username: 'a', email: 'a@b' });
+      await setDoc(doc(ctx.firestore(), 'users/alice'), {
+        uid: 'alice',
+        username: 'a',
+        email: 'a@b',
+      });
     });
     const anon = env.unauthenticatedContext().firestore();
     await assertFails(getDoc(doc(anon, 'users/alice')));
@@ -72,7 +82,11 @@ describe('/users/{uid}', () => {
 
   it('owner cannot delete their user doc (soft delete is backend-only)', async () => {
     await seedAsAdmin(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'users/alice'), { uid: 'alice', username: 'a', email: 'a@b' });
+      await setDoc(doc(ctx.firestore(), 'users/alice'), {
+        uid: 'alice',
+        username: 'a',
+        email: 'a@b',
+      });
     });
     const alice = env.authenticatedContext('alice').firestore();
     const { deleteDoc } = await import('firebase/firestore');
@@ -83,7 +97,10 @@ describe('/users/{uid}', () => {
 describe('/usernames/{username}', () => {
   it('anonymous can read /usernames/{u} (availability check)', async () => {
     await seedAsAdmin(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), 'usernames/alice'), { uid: 'alice', claimedAt: new Date() });
+      await setDoc(doc(ctx.firestore(), 'usernames/alice'), {
+        uid: 'alice',
+        claimedAt: new Date(),
+      });
     });
     const anon = env.unauthenticatedContext().firestore();
     await assertSucceeds(getDoc(doc(anon, 'usernames/alice')));
@@ -91,12 +108,16 @@ describe('/usernames/{username}', () => {
 
   it('anonymous cannot write /usernames/{u}', async () => {
     const anon = env.unauthenticatedContext().firestore();
-    await assertFails(setDoc(doc(anon, 'usernames/alice'), { uid: 'alice', claimedAt: new Date() }));
+    await assertFails(
+      setDoc(doc(anon, 'usernames/alice'), { uid: 'alice', claimedAt: new Date() }),
+    );
   });
 
   it('authenticated user cannot write /usernames/{u} (backend-only)', async () => {
     const alice = env.authenticatedContext('alice').firestore();
-    await assertFails(setDoc(doc(alice, 'usernames/alice'), { uid: 'alice', claimedAt: new Date() }));
+    await assertFails(
+      setDoc(doc(alice, 'usernames/alice'), { uid: 'alice', claimedAt: new Date() }),
+    );
   });
 });
 

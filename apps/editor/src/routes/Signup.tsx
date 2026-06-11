@@ -75,7 +75,13 @@ export function Signup() {
           label="Username"
           autoComplete="off"
           error={errors.username?.message}
-          hint={<UsernameHint isStale={availability.isStale} data={availability.data} value={username} />}
+          hint={
+            <UsernameHint
+              isStale={availability.isStale}
+              data={availability.data}
+              value={username}
+            />
+          }
           {...register('username')}
         />
         {submitError ? <p className="text-sm text-red-600">{submitError}</p> : null}
