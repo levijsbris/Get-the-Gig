@@ -10,4 +10,17 @@ export type { Column, Section } from './section';
 export { ThemeSchema, defaultTheme } from './theme';
 export type { Theme } from './theme';
 
-export { emptyHomePage, emptySnapshot } from './defaults';
+export { ComponentSchema, TextComponentSchema } from './components';
+export type { Component, TextComponent } from './components';
+
+export { TipTapDocSchema, TipTapMarkSchema, emptyTipTapDoc } from './tiptap';
+export type { TipTapDoc, TipTapNode } from './tiptap';
+
+export {
+  emptyHomePage,
+  emptySnapshot,
+  createColumn,
+  createSection,
+  createPage,
+  createTextComponent,
+} from './defaults';

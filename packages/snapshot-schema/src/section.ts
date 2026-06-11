@@ -1,10 +1,9 @@
 import { z } from 'zod';
+import { ComponentSchema } from './components';
 
-// Components arrive in Phase 4/5. For now Column.components is just an empty tuple;
-// when a component union exists it becomes z.array(ComponentSchema).
 export const ColumnSchema = z.object({
   id: z.string(),
-  components: z.array(z.unknown()).default([]),
+  components: z.array(ComponentSchema).default([]),
 });
 
 export type Column = z.infer<typeof ColumnSchema>;
