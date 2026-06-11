@@ -11,9 +11,13 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(function F
   ref,
 ) {
   const inputId = id ?? `field-${label.replace(/\s+/g, '-').toLowerCase()}`;
+  // Note: hint and error live OUTSIDE the <label> element so the accessible label is
+  // just the field label text. Otherwise getByLabelText queries match too broadly.
   return (
-    <label htmlFor={inputId} className="block">
-      <span className="block text-sm font-medium text-slate-700">{label}</span>
+    <div className="block">
+      <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
+        {label}
+      </label>
       <input
         ref={ref}
         id={inputId}
@@ -24,6 +28,6 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(function F
       />
       {hint ? <span className="mt-1 block text-xs text-slate-500">{hint}</span> : null}
       {error ? <span className="mt-1 block text-xs text-red-600">{error}</span> : null}
-    </label>
+    </div>
   );
 });
