@@ -4,4 +4,7 @@ export { Section } from './components/Section';
 export { Column } from './components/Column';
 export { ComponentSwitch } from './components/ComponentSwitch';
 export { Text } from './components/Text';
+export { Button } from './components/Button';
 export { ThemeProvider, useTheme } from './theme/ThemeProvider';
+export { useNavTarget } from './theme/useNavTarget';
+export type { ResolvedNavTarget } from './theme/useNavTarget';

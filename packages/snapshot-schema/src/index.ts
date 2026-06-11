@@ -17,8 +17,8 @@ export {
 } from './theme';
 export type { Theme, TypeStyle, TypeStyles, TypeStyleName } from './theme';
 
-export { ComponentSchema, TextComponentSchema } from './components';
-export type { Component, TextComponent } from './components';
+export { ComponentSchema, ButtonComponentSchema, TextComponentSchema } from './components';
+export type { Component, ButtonComponent, TextComponent } from './components';
 
 export { TipTapDocSchema, TipTapMarkSchema, emptyTipTapDoc } from './tiptap';
 export type { TipTapDoc, TipTapNode } from './tiptap';
@@ -45,4 +45,5 @@ export {
   createSection,
   createPage,
   createTextComponent,
+  createButtonComponent,
 } from './defaults';

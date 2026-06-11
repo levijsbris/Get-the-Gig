@@ -2,6 +2,7 @@ import { useDndMonitor, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  ButtonEditable,
   EditableShell,
   TextEditable,
   type ContextMenuAction,
@@ -395,8 +396,6 @@ function SortableComponent({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: componentId,
   });
-  if (component.type !== 'text') return null;
-
   const handleMenuAction = (action: ContextMenuAction) => {
     switch (action) {
       case 'duplicate':
@@ -414,6 +413,15 @@ function SortableComponent({
     }
   };
 
+  const onSelect = () =>
+    setSelection({
+      kind: 'component',
+      pageId,
+      sectionId,
+      columnIndex,
+      componentIndex,
+    });
+
   return (
     <div
       ref={setNodeRef}
@@ -426,23 +434,43 @@ function SortableComponent({
       {...attributes}
       {...listeners}
     >
-      <TextEditable
-        component={component}
-        selected={selected}
-        onSelect={() =>
-          setSelection({
-            kind: 'component',
-            pageId,
-            sectionId,
-            columnIndex,
-            componentIndex,
-          })
-        }
-        onChange={(doc) =>
-          updateTextComponentDoc(sectionId, columnIndex, componentIndex, doc)
-        }
-        onMenuAction={handleMenuAction}
-      />
+      {renderComponentEditor(
+        component,
+        selected,
+        onSelect,
+        handleMenuAction,
+        (doc) => updateTextComponentDoc(sectionId, columnIndex, componentIndex, doc),
+      )}
     </div>
   );
+}
+
+function renderComponentEditor(
+  component: Section['columns'][number]['components'][number],
+  selected: boolean,
+  onSelect: () => void,
+  onMenuAction: (action: ContextMenuAction) => void,
+  onTextChange: (doc: import('@portfoliopro/snapshot-schema').TipTapDoc) => void,
+) {
+  switch (component.type) {
+    case 'text':
+      return (
+        <TextEditable
+          component={component}
+          selected={selected}
+          onSelect={onSelect}
+          onChange={onTextChange}
+          onMenuAction={onMenuAction}
+        />
+      );
+    case 'button':
+      return (
+        <ButtonEditable
+          component={component}
+          selected={selected}
+          onSelect={onSelect}
+          onMenuAction={onMenuAction}
+        />
+      );
+  }
 }

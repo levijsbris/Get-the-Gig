@@ -2,6 +2,7 @@ export { EditableShell } from './components/EditableShell';
 export { SectionEditable } from './components/SectionEditable';
 export { TextEditable } from './components/TextEditable';
 export { TextEditor, textEditorCommands } from './components/TextEditor';
+export { ButtonEditable } from './components/ButtonEditable';
 
 export { ContextMenu } from './components/ContextMenu';
 export type { ContextMenuAction, ContextMenuItem } from './components/ContextMenu';

@@ -55,3 +55,4 @@ fake-gcs-data/
 
 # Local Claude state (keep skills + settings shared, ignore personal)
 .claude/settings.local.json
+*.png

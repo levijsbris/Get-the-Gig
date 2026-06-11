@@ -3,6 +3,7 @@ import type { Column, Section } from './section';
 import type { Page } from './page';
 import type { Snapshot } from './snapshot';
 import { SCHEMA_VERSION } from './snapshot';
+import type { ButtonComponent } from './components/button';
 import type { TextComponent } from './components/text';
 import { defaultTheme } from './theme';
 import { emptyTipTapDoc } from './tiptap';
@@ -46,6 +47,16 @@ export function createTextComponent(): TextComponent {
     id: ulid(),
     type: 'text',
     doc: emptyTipTapDoc(),
+  };
+}
+
+export function createButtonComponent(): ButtonComponent {
+  return {
+    id: ulid(),
+    type: 'button',
+    label: 'Click me',
+    variant: 'primary',
+    alignment: 'left',
   };
 }
 
