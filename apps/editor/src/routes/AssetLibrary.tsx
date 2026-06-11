@@ -18,7 +18,9 @@ export function AssetLibrary() {
 
   const data = list.data;
   const quotaReached =
-    data !== undefined && data.portfolioBytesQuota > 0 && data.portfolioBytesUsed >= data.portfolioBytesQuota;
+    data !== undefined &&
+    data.portfolioBytesQuota > 0 &&
+    data.portfolioBytesUsed >= data.portfolioBytesQuota;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -45,7 +47,10 @@ export function AssetLibrary() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <div role="tablist" className="flex gap-1 rounded-md border border-slate-200 bg-white p-1">
+          <div
+            role="tablist"
+            className="flex gap-1 rounded-md border border-slate-200 bg-white p-1"
+          >
             <FilterButton current={filter} value="all" setFilter={setFilter}>
               All
             </FilterButton>

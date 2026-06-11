@@ -57,7 +57,9 @@ export function UploadDropzone({ portfolioId, disabled }: UploadDropzoneProps) {
         onClick={() => inputRef.current?.click()}
         className="flex w-full items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white p-8 text-sm text-slate-600 hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {disabled ? 'Quota reached — delete assets to free space' : 'Click to choose files (JPEG, PNG, WebP, GIF, PDF)'}
+        {disabled
+          ? 'Quota reached — delete assets to free space'
+          : 'Click to choose files (JPEG, PNG, WebP, GIF, PDF)'}
       </button>
       <input
         ref={inputRef}
