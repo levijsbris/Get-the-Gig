@@ -18,7 +18,9 @@ vi.mock('../../lib/firebase', () => ({
 import { NewPortfolioModal } from './NewPortfolioModal';
 
 function Wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -60,7 +62,9 @@ describe('NewPortfolioModal', () => {
     apiFetchMock.mockResolvedValue({ id: 'pid-1' });
     const onClose = vi.fn();
     const onCreated = vi.fn();
-    render(<NewPortfolioModal open onClose={onClose} onCreated={onCreated} />, { wrapper: Wrapper });
+    render(<NewPortfolioModal open onClose={onClose} onCreated={onCreated} />, {
+      wrapper: Wrapper,
+    });
 
     fireEvent.change(screen.getByLabelText(/^title$/i), { target: { value: 'Resume' } });
     fireEvent.click(screen.getByRole('button', { name: /create portfolio/i }));

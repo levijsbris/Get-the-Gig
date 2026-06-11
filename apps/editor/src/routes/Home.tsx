@@ -21,9 +21,7 @@ export function Home() {
           <h1 className="text-2xl font-semibold text-slate-900">
             {me?.username ? `${me.username}'s portfolios` : 'Portfolios'}
           </h1>
-          {me?.email ? (
-            <p className="text-sm text-slate-500">{me.email}</p>
-          ) : null}
+          {me?.email ? <p className="text-sm text-slate-500">{me.email}</p> : null}
         </div>
         <nav className="flex items-center gap-3 text-sm">
           <Link to="/account" className="text-slate-700 hover:underline">
@@ -62,7 +60,10 @@ export function Home() {
       ) : portfolios.isError ? (
         <p className="text-sm text-red-600">Failed to load portfolios.</p>
       ) : tab === 'active' ? (
-        <ActivePortfolioList portfolios={portfolios.data ?? []} onCreate={() => setModalOpen(true)} />
+        <ActivePortfolioList
+          portfolios={portfolios.data ?? []}
+          onCreate={() => setModalOpen(true)}
+        />
       ) : (
         <RestoreList portfolios={portfolios.data ?? []} />
       )}

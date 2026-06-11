@@ -10,7 +10,10 @@
     "./artifacts/schema": "./dist/artifacts/snapshot.schema.json",
     "./artifacts/empty": "./dist/artifacts/snapshot.empty.json"
   },
-  "files": ["src", "dist"],
+  "files": [
+    "src",
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json && tsx scripts/emit-artifacts.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",

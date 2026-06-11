@@ -173,9 +173,7 @@ describe('/users/{uid}/portfolios/{pid}', () => {
 
   it('other user cannot write alice portfolio', async () => {
     const bob = env.authenticatedContext('bob').firestore();
-    await assertFails(
-      setDoc(doc(bob, 'users/alice/portfolios/p1'), { uid: 'alice', slug: 's' }),
-    );
+    await assertFails(setDoc(doc(bob, 'users/alice/portfolios/p1'), { uid: 'alice', slug: 's' }));
   });
 });
 

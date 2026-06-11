@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import {
-  useRestorePortfolio,
-  type PortfolioSummary,
-} from '../../hooks/usePortfolios';
+import { useRestorePortfolio, type PortfolioSummary } from '../../hooks/usePortfolios';
 
 interface RestoreListProps {
   portfolios: PortfolioSummary[];
@@ -14,9 +11,11 @@ export function RestoreList({ portfolios }: RestoreListProps) {
 
   const softDeleted = portfolios.filter((p) => p.softDeletedAt !== null);
   if (softDeleted.length === 0) {
-    return <p className="rounded border border-dashed border-slate-300 p-6 text-sm text-slate-500">
-      Nothing to restore. Soft-deleted portfolios appear here for 7 days.
-    </p>;
+    return (
+      <p className="rounded border border-dashed border-slate-300 p-6 text-sm text-slate-500">
+        Nothing to restore. Soft-deleted portfolios appear here for 7 days.
+      </p>
+    );
   }
 
   async function onRestore(id: string) {
