@@ -4,11 +4,14 @@
 #   firebase-emulators
 #     - Firestore:    8080
 #     - Auth:         9099
+#     - Storage:      9299  (Firebase Storage emulator — used for storage rules
+#                            tests and Phase 4+ direct client-SDK uploads)
 #     - Emulator UI:  4000
 #     - Hub:          4400
 #     - Logging:      4500
 #   fake-gcs-server
-#     - HTTP API:     9199  (Cloud Storage compatible)
+#     - HTTP API:     9199  (raw Cloud Storage emulation; backend's signed-URL
+#                            byte transfers go here, not via Firebase Storage)
 #
 # Bring up:    docker compose up -d
 # Tear down:   docker compose down
@@ -21,12 +24,13 @@ services:
     working_dir: /home/node
     command: >
       firebase emulators:start
-        --only auth,firestore
+        --only auth,firestore,storage
         --project portfoliopro-local
         --config /home/node/firebase.json
     ports:
       - '8080:8080' # Firestore
       - '9099:9099' # Auth
+      - '9299:9299' # Storage
       - '4000:4000' # Emulator UI
       - '4400:4400' # Hub
       - '4500:4500' # Logging
@@ -35,6 +39,7 @@ services:
       - ./infra/.firebaserc:/home/node/.firebaserc:ro
       - ./infra/firestore.rules:/home/node/firestore.rules:ro
       - ./infra/firestore.indexes.json:/home/node/firestore.indexes.json:ro
+      - ./infra/storage.rules:/home/node/storage.rules:ro
       - emulator-data:/home/node/data
     healthcheck:
       # Use node + http (always present in firebase-tools image) — wget is not installed.

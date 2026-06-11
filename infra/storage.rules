@@ -1,7 +1,28 @@
 rules_version = '2';
-// Phase 0 placeholder: deny-by-default. Real rules land in Phase 3.
+
+// Phase 3 — assets. These rules govern direct client-SDK access to Firebase
+// Storage. The backend's signed-URL upload flow goes through fake-gcs-server
+// (raw GCS emulation) and bypasses these rules entirely by design — Phase 4+
+// may add direct SDK reads for already-uploaded assets so the rules are
+// already in shape.
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Per-user prefix in the private bucket — only the owner can read or write.
+    match /users/{uid}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Published-snapshot prefix — clients never touch these directly. Published
+    // public snapshots are served from the public bucket (different rules file
+    // at deploy time); password-gated ones go through signed URLs the backend
+    // mints. Both reads and writes are denied here so a misconfigured emulator
+    // can't expose them.
+    match /snapshots/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Everything else under the bucket: denied.
     match /{allPaths=**} {
       allow read, write: if false;
     }
