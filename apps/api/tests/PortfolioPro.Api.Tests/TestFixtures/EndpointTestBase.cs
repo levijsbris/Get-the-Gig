@@ -1,3 +1,6 @@
+using System.Net.Http.Json;
+using PortfolioPro.Api.Endpoints.Auth.Dto;
+using PortfolioPro.Api.Endpoints.Portfolios.Dto;
 using Xunit;
 
 namespace PortfolioPro.Api.Tests.TestFixtures;
@@ -21,4 +24,20 @@ public abstract class EndpointTestBase : IAsyncLifetime
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
+
+    protected static async Task SignupAsync(HttpClient client, string username)
+    {
+        var response = await client.PostAsJsonAsync("/api/auth/signup", new SignupRequest(username));
+        response.EnsureSuccessStatusCode();
+    }
+
+    protected static async Task<PortfolioSummary> CreatePortfolioAsync(
+        HttpClient client, string title, string slug, string? description = null)
+    {
+        var response = await client.PostAsJsonAsync(
+            "/api/portfolios",
+            new CreatePortfolioRequest(title, slug, description));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PortfolioSummary>())!;
+    }
 }
