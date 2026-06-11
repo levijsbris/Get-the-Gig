@@ -97,10 +97,27 @@ export function Editor() {
   const { id: portfolioId } = useParams<{ id: string }>();
   const { load, saveStatus } = useDraftAutosave(portfolioId ?? '');
   const setSelection = useEditorStore((s) => s.setSelection);
+  const selection = useEditorStore((s) => s.selection);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
+  const duplicateComponent = useEditorStore((s) => s.duplicateComponent);
+  const deleteComponent = useEditorStore((s) => s.deleteComponent);
+  const moveComponentUp = useEditorStore((s) => s.moveComponentUp);
+  const moveComponentDown = useEditorStore((s) => s.moveComponentDown);
 
-  // Keyboard: ⌘Z / ctrl-Z undo; ⌘⇧Z / ctrl-Y redo; Escape clears selection.
+  // Keyboard:
+  //   ⌘Z / ctrl-Z      undo
+  //   ⌘⇧Z / ctrl-Y     redo
+  //   Escape           clear selection
+  //   With a component selected:
+  //     ⌘D             duplicate component
+  //     ⌫ / Delete     delete component
+  //     ⌘↑ / ⌘↓        move component up / down within its column
+  //
+  // Shortcuts that target the current selection only fire when the
+  // event target isn't an editable surface (input, textarea, or
+  // contentEditable), so typing 'd' or pressing backspace inside a text
+  // editor doesn't trigger a component-level action.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const meta = event.metaKey || event.ctrlKey;
@@ -112,14 +129,51 @@ export function Editor() {
         event.preventDefault();
         if (event.shiftKey) redo();
         else undo();
-      } else if (meta && (event.key === 'y' || event.key === 'Y')) {
+        return;
+      }
+      if (meta && (event.key === 'y' || event.key === 'Y')) {
         event.preventDefault();
         redo();
+        return;
+      }
+
+      if (selection?.kind !== 'component') return;
+
+      const target = event.target as HTMLElement | null;
+      const inEditable =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      if (inEditable) return;
+
+      const { sectionId, columnIndex, componentIndex } = selection;
+      if (meta && (event.key === 'd' || event.key === 'D')) {
+        event.preventDefault();
+        duplicateComponent(sectionId, columnIndex, componentIndex);
+      } else if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        deleteComponent(sectionId, columnIndex, componentIndex);
+      } else if (meta && event.key === 'ArrowUp') {
+        event.preventDefault();
+        moveComponentUp(sectionId, columnIndex, componentIndex);
+      } else if (meta && event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveComponentDown(sectionId, columnIndex, componentIndex);
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [setSelection, undo, redo]);
+  }, [
+    setSelection,
+    undo,
+    redo,
+    selection,
+    duplicateComponent,
+    deleteComponent,
+    moveComponentUp,
+    moveComponentDown,
+  ]);
 
   if (!portfolioId) {
     return <p className="p-6 text-sm text-red-600">Missing portfolio id.</p>;

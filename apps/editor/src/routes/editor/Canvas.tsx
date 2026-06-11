@@ -1,7 +1,11 @@
 import { useDndMonitor, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { EditableShell, TextEditable } from '@portfoliopro/editor-kit';
+import {
+  EditableShell,
+  TextEditable,
+  type ContextMenuAction,
+} from '@portfoliopro/editor-kit';
 import { ThemeProvider, useTheme } from '@portfoliopro/renderer';
 import { type Section } from '@portfoliopro/snapshot-schema';
 import { Fragment, useState } from 'react';
@@ -383,10 +387,32 @@ function SortableComponent({
   selected: boolean;
 }) {
   const setSelection = useEditorStore((s) => s.setSelection);
+  const duplicateComponent = useEditorStore((s) => s.duplicateComponent);
+  const deleteComponent = useEditorStore((s) => s.deleteComponent);
+  const moveComponentUp = useEditorStore((s) => s.moveComponentUp);
+  const moveComponentDown = useEditorStore((s) => s.moveComponentDown);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: componentId,
   });
   if (component.type !== 'text') return null;
+
+  const handleMenuAction = (action: ContextMenuAction) => {
+    switch (action) {
+      case 'duplicate':
+        duplicateComponent(sectionId, columnIndex, componentIndex);
+        return;
+      case 'delete':
+        deleteComponent(sectionId, columnIndex, componentIndex);
+        return;
+      case 'moveUp':
+        moveComponentUp(sectionId, columnIndex, componentIndex);
+        return;
+      case 'moveDown':
+        moveComponentDown(sectionId, columnIndex, componentIndex);
+        return;
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -411,6 +437,7 @@ function SortableComponent({
             componentIndex,
           })
         }
+        onMenuAction={handleMenuAction}
       />
     </div>
   );

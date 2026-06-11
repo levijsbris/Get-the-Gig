@@ -4,6 +4,7 @@ import {
   createSection,
   createTextComponent,
   emptySnapshot,
+  type Component,
   type Snapshot,
 } from '@portfoliopro/snapshot-schema';
 import { produce } from 'immer';
@@ -59,6 +60,17 @@ export interface EditorState {
 
   // component operations
   addTextComponent: (sectionId: string, columnIndex: number, insertIndex?: number) => void;
+  /**
+   * Insert a pre-built component instance (from a palette factory or picker
+   * flow) into the given column. Used by palette entries that need their own
+   * factory / picker rather than the type-specific addXxxComponent helpers.
+   */
+  addComponentInstance: (
+    sectionId: string,
+    columnIndex: number,
+    component: Component,
+    insertIndex?: number,
+  ) => void;
   moveComponent: (
     sectionId: string,
     fromColumn: number,
@@ -66,6 +78,10 @@ export interface EditorState {
     toColumn: number,
     toIndex: number,
   ) => void;
+  /** Swap a component with its previous sibling in the same column. */
+  moveComponentUp: (sectionId: string, columnIndex: number, componentIndex: number) => void;
+  /** Swap a component with its next sibling in the same column. */
+  moveComponentDown: (sectionId: string, columnIndex: number, componentIndex: number) => void;
   duplicateComponent: (sectionId: string, columnIndex: number, componentIndex: number) => void;
   deleteComponent: (sectionId: string, columnIndex: number, componentIndex: number) => void;
 }
@@ -287,6 +303,48 @@ export const useEditorStore = create<EditorState>((set, get) => {
             const clamped = Math.max(0, Math.min(insertIndex, column.components.length));
             column.components.splice(clamped, 0, component);
           }
+        }),
+      ),
+
+    addComponentInstance: (sectionId, columnIndex, component, insertIndex) =>
+      set((state) =>
+        commit(state, (draft) => {
+          const target = findSection(draft, sectionId);
+          if (!target) return;
+          const column = target.section.columns[columnIndex];
+          if (!column) return;
+          if (insertIndex === undefined) {
+            column.components.push(component);
+          } else {
+            const clamped = Math.max(0, Math.min(insertIndex, column.components.length));
+            column.components.splice(clamped, 0, component);
+          }
+        }),
+      ),
+
+    moveComponentUp: (sectionId, columnIndex, componentIndex) =>
+      set((state) =>
+        commit(state, (draft) => {
+          const target = findSection(draft, sectionId);
+          if (!target) return;
+          const column = target.section.columns[columnIndex];
+          if (!column) return;
+          if (componentIndex <= 0 || componentIndex >= column.components.length) return;
+          const [moved] = column.components.splice(componentIndex, 1);
+          if (moved) column.components.splice(componentIndex - 1, 0, moved);
+        }),
+      ),
+
+    moveComponentDown: (sectionId, columnIndex, componentIndex) =>
+      set((state) =>
+        commit(state, (draft) => {
+          const target = findSection(draft, sectionId);
+          if (!target) return;
+          const column = target.section.columns[columnIndex];
+          if (!column) return;
+          if (componentIndex < 0 || componentIndex >= column.components.length - 1) return;
+          const [moved] = column.components.splice(componentIndex, 1);
+          if (moved) column.components.splice(componentIndex + 1, 0, moved);
         }),
       ),
 

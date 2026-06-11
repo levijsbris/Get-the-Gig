@@ -160,6 +160,72 @@ describe('editorStore — section + component mutations', () => {
     expect(finalIds[1]).toBe(ids[0]);
   });
 
+  it('moveComponentUp swaps with previous sibling; no-op at index 0', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0);
+    store.addTextComponent(sectionId, 0);
+    store.addTextComponent(sectionId, 0);
+    const ids = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+
+    store.moveComponentUp(sectionId, 0, 2);
+    const after = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+    expect(after).toEqual([ids[0], ids[2], ids[1]]);
+
+    // Already at top — no-op.
+    const before = getSnapshot();
+    store.moveComponentUp(sectionId, 0, 0);
+    expect(getSnapshot()).toBe(before);
+  });
+
+  it('moveComponentDown swaps with next sibling; no-op at last index', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0);
+    store.addTextComponent(sectionId, 0);
+    store.addTextComponent(sectionId, 0);
+    const ids = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+
+    store.moveComponentDown(sectionId, 0, 0);
+    const after = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+    expect(after).toEqual([ids[1], ids[0], ids[2]]);
+
+    // Already at bottom — no-op.
+    const before = getSnapshot();
+    store.moveComponentDown(sectionId, 0, 2);
+    expect(getSnapshot()).toBe(before);
+  });
+
+  it('addComponentInstance inserts a pre-built component at the given index', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0);
+
+    // Simulate a palette factory output.
+    const built: TextComponent = {
+      id: 'externally-built',
+      type: 'text',
+      doc: { type: 'doc', content: [] },
+    };
+    store.addComponentInstance(sectionId, 0, built, 0);
+    const ids = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components as TextComponent[]
+    ).map((c) => c.id);
+    expect(ids[0]).toBe('externally-built');
+    expect(ids).toHaveLength(2);
+  });
+
   it('addTextComponent + moveComponent moves between columns', () => {
     const store = useEditorStore.getState();
     store.addSection();

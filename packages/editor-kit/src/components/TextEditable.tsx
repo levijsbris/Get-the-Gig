@@ -1,17 +1,9 @@
-import type { TextComponent } from '@portfoliopro/snapshot-schema';
 import { Text } from '@portfoliopro/renderer';
-import { EditableShell } from './EditableShell';
+import { withEditable } from '../hocs/withEditable';
 
-interface TextEditableProps {
-  component: TextComponent;
-  selected: boolean;
-  onSelect: (event: React.MouseEvent) => void;
-}
-
-export function TextEditable({ component, selected, onSelect }: TextEditableProps) {
-  return (
-    <EditableShell selected={selected} onSelect={onSelect} label="Text">
-      <Text component={component} />
-    </EditableShell>
-  );
-}
+/**
+ * Phase 4 / 5 transitional TextEditable. Phase 5 component commits replace
+ * the wrapped `Text` renderer with the full TipTap editor; the HOC chrome
+ * (selection ring, ⋮ button, right-click menu) is unchanged across that swap.
+ */
+export const TextEditable = withEditable(Text, { label: 'Text' });
