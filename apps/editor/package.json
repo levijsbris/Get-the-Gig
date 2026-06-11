@@ -11,7 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.4.0",
+    "@portfoliopro/editor-kit": "workspace:*",
+    "@portfoliopro/renderer": "workspace:*",
     "@portfoliopro/shared-types": "workspace:*",
     "@portfoliopro/snapshot-schema": "workspace:*",
     "@tanstack/react-query": "^5.101.0",

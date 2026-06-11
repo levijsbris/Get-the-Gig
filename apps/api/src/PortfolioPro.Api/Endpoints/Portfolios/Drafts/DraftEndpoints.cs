@@ -13,6 +13,11 @@ public static class DraftEndpoints
             .RequireUser()
             .WithTags("Drafts");
 
+        group.MapGet("/", GetDraft)
+            .WithName("GetDraft")
+            .Produces<GetDraftResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         group.MapPatch("/", UpdateDraft)
             .WithName("UpdateDraft")
             .Produces<UpdateDraftResponse>(StatusCodes.Status200OK)
@@ -21,6 +26,23 @@ public static class DraftEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return app;
+    }
+
+    private static async Task<IResult> GetDraft(
+        string portfolioId,
+        HttpContext http,
+        PortfolioService portfolios,
+        CancellationToken ct)
+    {
+        var user = http.GetUser();
+        var record = await portfolios.GetDraftAsync(user.Uid, portfolioId, ct);
+        return record is null
+            ? Results.Problem(
+                title: "Portfolio not found",
+                detail: "No portfolio exists with that ID for the authenticated user.",
+                statusCode: StatusCodes.Status404NotFound,
+                type: "https://portfoliopro.com/errors/portfolio-not-found")
+            : Results.Ok(new GetDraftResponse(record.Draft, record.DraftUpdatedAt, record.DraftSchemaVersion));
     }
 
     private static async Task<IResult> UpdateDraft(

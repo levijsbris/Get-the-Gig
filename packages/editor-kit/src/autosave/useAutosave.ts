@@ -56,7 +56,8 @@ export function useAutosave<T>({
     setStatus('saving');
     setError(null);
     const valueAtStart = latestValue.current;
-    const promise = onSaveRef.current(valueAtStart)
+    const promise = onSaveRef
+      .current(valueAtStart)
       .then(() => {
         setStatus('saved');
       })
@@ -94,7 +95,6 @@ export function useAutosave<T>({
         timer.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, enabled, delayMs]);
 
   async function flush() {

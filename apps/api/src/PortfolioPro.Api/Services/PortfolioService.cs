@@ -247,6 +247,28 @@ public sealed class PortfolioService(
         };
     }
 
+    public sealed record DraftRecord(
+        Dictionary<string, object?> Draft,
+        DateTimeOffset DraftUpdatedAt,
+        int DraftSchemaVersion);
+
+    public async Task<DraftRecord?> GetDraftAsync(string uid, string portfolioId, CancellationToken ct)
+    {
+        var snap = await PortfolioDoc(uid, portfolioId).GetSnapshotAsync(ct);
+        if (!snap.Exists) return null;
+        var data = snap.ToDictionary();
+        if (data.TryGetValue("softDeletedAt", out var sd) && sd is Timestamp) return null;
+
+        // Firestore returns nested objects as Dictionary<string, object> — cast through
+        // a nullable copy so the JSON serializer can round-trip nulls cleanly.
+        var draft = (Dictionary<string, object>)data["draft"];
+        var draftCopy = draft.ToDictionary(kv => kv.Key, kv => (object?)kv.Value);
+        return new DraftRecord(
+            Draft: draftCopy,
+            DraftUpdatedAt: snap.GetValue<Timestamp>("draftUpdatedAt").ToDateTimeOffset(),
+            DraftSchemaVersion: (int)snap.GetValue<long>("draftSchemaVersion"));
+    }
+
     public async Task<DateTimeOffset> UpdateDraftAsync(
         string uid,
         string portfolioId,

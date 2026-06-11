@@ -104,6 +104,9 @@ export function PortfolioCard({ portfolio }: PortfolioCardProps) {
       <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
         <span>Updated {new Date(portfolio.updatedAt).toLocaleString()}</span>
         <div className="flex items-center gap-3">
+          <a href={`/portfolios/${portfolio.id}/edit`} className="text-slate-700 hover:underline">
+            Edit
+          </a>
           <a href={`/portfolios/${portfolio.id}/assets`} className="text-slate-700 hover:underline">
             Assets
           </a>

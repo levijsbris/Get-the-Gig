@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  clearShadow,
-  readShadow,
-  shadowKey,
-  shadowWins,
-  writeShadow,
-} from '../localStorageShadow';
+import { clearShadow, readShadow, shadowKey, shadowWins, writeShadow } from '../localStorageShadow';
 
 describe('localStorageShadow', () => {
   const PORTFOLIO_ID = '01HEXAMPLE';

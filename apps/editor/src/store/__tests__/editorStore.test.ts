@@ -1,8 +1,4 @@
-import {
-  emptySnapshot,
-  type Snapshot,
-  type TextComponent,
-} from '@portfoliopro/snapshot-schema';
+import { emptySnapshot, type Snapshot, type TextComponent } from '@portfoliopro/snapshot-schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useEditorStore } from '../editorStore';
 
@@ -73,7 +69,7 @@ describe('editorStore — section + component mutations', () => {
   it('setSectionLayout resizes columns and merges drops into the last surviving column', () => {
     const store = useEditorStore.getState();
     store.addSection();
-    let sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
 
     store.setSectionLayout(sectionId, 3);
     store.addTextComponent(sectionId, 2); // component in column index 2
@@ -106,12 +102,16 @@ describe('editorStore — section + component mutations', () => {
     const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
     store.setSectionLayout(sectionId, 2);
     store.addTextComponent(sectionId, 0);
-    const componentId = (getSnapshot().pages[0]!.sections[0]!.columns[0]!.components[0]! as TextComponent).id;
+    const componentId = (
+      getSnapshot().pages[0]!.sections[0]!.columns[0]!.components[0]! as TextComponent
+    ).id;
 
     store.moveComponent(sectionId, 0, 0, 1, 0);
     expect(getSnapshot().pages[0]!.sections[0]!.columns[0]!.components).toHaveLength(0);
     expect(getSnapshot().pages[0]!.sections[0]!.columns[1]!.components).toHaveLength(1);
-    expect((getSnapshot().pages[0]!.sections[0]!.columns[1]!.components[0]! as TextComponent).id).toBe(componentId);
+    expect(
+      (getSnapshot().pages[0]!.sections[0]!.columns[1]!.components[0]! as TextComponent).id,
+    ).toBe(componentId);
   });
 });
 
@@ -140,7 +140,9 @@ describe('editorStore — history navigation + selection survival', () => {
     expect(getSnapshot().pages).toHaveLength(1);
     store.addSection();
     // Cannot redo back to the 2-page or 3-page state — those entries are gone.
-    expect(useEditorStore.getState().history.index).toBe(useEditorStore.getState().history.entries.length - 1);
+    expect(useEditorStore.getState().history.index).toBe(
+      useEditorStore.getState().history.entries.length - 1,
+    );
   });
 
   it('selection survives undo when the selected element still exists', () => {

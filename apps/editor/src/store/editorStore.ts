@@ -155,7 +155,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
     addPage: () =>
       set((state) =>
         commit(state, (draft) => {
-          draft.pages.push(createPage(`Page ${draft.pages.length + 1}`, `page-${ulid().slice(-8).toLowerCase()}`));
+          draft.pages.push(
+            createPage(`Page ${draft.pages.length + 1}`, `page-${ulid().slice(-8).toLowerCase()}`),
+          );
         }),
       ),
 

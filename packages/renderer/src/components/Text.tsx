@@ -23,7 +23,11 @@ export function Text({ component }: TextProps) {
         whiteSpace: 'pre-wrap',
       }}
     >
-      {flattened === '' ? <span style={{ color: theme.colors.muted }}>(empty text)</span> : flattened}
+      {flattened === '' ? (
+        <span style={{ color: theme.colors.muted }}>(empty text)</span>
+      ) : (
+        flattened
+      )}
     </div>
   );
 }
