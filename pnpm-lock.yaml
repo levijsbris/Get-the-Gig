@@ -50,6 +50,9 @@ importers:
       firebase:
         specifier: ^12.14.0
         version: 12.14.0
+      immer:
+        specifier: ^11.1.8
+        version: 11.1.8
       pdfjs-dist:
         specifier: ^6.0.227
         version: 6.0.227
@@ -65,12 +68,15 @@ importers:
       react-router-dom:
         specifier: ^6
         version: 6.30.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      ulid:
+        specifier: ^2.4.0
+        version: 2.4.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
       zustand:
         specifier: ^5.0.14
-        version: 5.0.14(@types/react@18.3.28)(react@18.3.1)
+        version: 5.0.14(@types/react@18.3.28)(immer@11.1.8)(react@18.3.1)
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.6.3
@@ -1848,6 +1854,9 @@ packages:
   ignore@7.0.5:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
+
+  immer@11.1.8:
+    resolution: {integrity: sha512-/tbkHMW7y10Lx6i1crLjD4/OhNkRG+Fo7byZHtah0547nIeXYcpIXaUh0IAQY6gO5459qpGGYapcEOHtFXkIuA==}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -4230,6 +4239,8 @@ snapshots:
 
   ignore@7.0.5: {}
 
+  immer@11.1.8: {}
+
   import-fresh@3.3.1:
     dependencies:
       parent-module: 1.0.1
@@ -4919,7 +4930,8 @@ snapshots:
 
   zod@4.4.3: {}
 
-  zustand@5.0.14(@types/react@18.3.28)(react@18.3.1):
+  zustand@5.0.14(@types/react@18.3.28)(immer@11.1.8)(react@18.3.1):
     optionalDependencies:
       '@types/react': 18.3.28
+      immer: 11.1.8
       react: 18.3.1
