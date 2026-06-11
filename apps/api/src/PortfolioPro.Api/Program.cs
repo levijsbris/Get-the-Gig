@@ -3,6 +3,7 @@ using PortfolioPro.Api.Auth;
 using PortfolioPro.Api.Endpoints;
 using PortfolioPro.Api.Endpoints.Auth;
 using PortfolioPro.Api.Endpoints.Portfolios;
+using PortfolioPro.Api.Endpoints.Portfolios.Assets;
 using PortfolioPro.Api.Errors;
 using PortfolioPro.Api.Infrastructure;
 using PortfolioPro.Api.Services;
@@ -41,6 +42,7 @@ builder.Services.AddHttpClient<IStorageObjectClient, EmulatorStorageObjectClient
 builder.Services.AddScoped<UsernameService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PortfolioService>();
+builder.Services.AddScoped<AssetService>();
 
 builder.Services.AddSingleton<ISnapshotValidator, SnapshotValidator>();
 builder.Services.AddSingleton<IEmptySnapshotProvider, EmptySnapshotProvider>();
@@ -55,6 +57,15 @@ app.UseCors(EditorCorsPolicy);
 app.MapHealthEndpoints();
 app.MapAuthEndpoints();
 app.MapPortfolioEndpoints();
+app.MapAssetEndpoints();
+
+// Bootstrap fake-gcs bucket so the first upload doesn't 404. Idempotent.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var storage = scope.ServiceProvider.GetRequiredService<IStorageObjectClient>();
+    await storage.EnsureBucketAsync(CancellationToken.None);
+}
 
 app.Run();
 
