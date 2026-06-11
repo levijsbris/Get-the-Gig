@@ -15,6 +15,16 @@ export function Editor() {
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
 
+  // VERSION MARKER — temporary, lets the user verify they're on the latest
+  // phase-4 build with column selection + palette drag. Remove once the
+  // features are confirmed visible.
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log(
+      '[PortfolioPro editor] build marker: column-select + palette-drag (commit 45c282c+)',
+    );
+  }, []);
+
   // Keyboard: ⌘Z / ctrl-Z undo; ⌘⇧Z / ctrl-Y redo; Escape clears selection.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
