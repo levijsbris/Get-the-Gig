@@ -2,6 +2,15 @@ export { EditableShell } from './components/EditableShell';
 export { SectionEditable } from './components/SectionEditable';
 export { TextEditable } from './components/TextEditable';
 
+export { ContextMenu } from './components/ContextMenu';
+export type { ContextMenuAction, ContextMenuItem } from './components/ContextMenu';
+
+export { withEditable } from './hocs/withEditable';
+export type {
+  WithEditableInjectedProps,
+  WithEditableOptions,
+} from './hocs/withEditable';
+
 export { useAutosave } from './autosave/useAutosave';
 export type { UseAutosaveOptions, UseAutosaveResult } from './autosave/useAutosave';
 
