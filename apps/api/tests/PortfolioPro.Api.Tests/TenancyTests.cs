@@ -120,4 +120,45 @@ public sealed class TenancyTests : EndpointTestBase, IClassFixture<ApiTestFixtur
             $"/api/portfolios/{aliceResume.Id}/assets/{aliceAsset.Id}/restore", content: null);
         Assert.Equal(HttpStatusCode.NotFound, bobRestore.StatusCode);
     }
+
+    [Fact]
+    public async Task Bob_Cannot_Patch_Alices_Draft()
+    {
+        var alice = Fx.CreateClientFor("uid-alice", "alice@example.com");
+        var bob = Fx.CreateClientFor("uid-bob", "bob@example.com");
+        await SignupAsync(alice, "alice");
+        await SignupAsync(bob, "bob");
+
+        var aliceResume = await CreatePortfolioAsync(alice, "Alice Resume", "resume");
+
+        var validSnapshot = System.Text.Json.JsonDocument.Parse("""
+            {
+              "version": 1,
+              "portfolio": { "title": "Hijack", "description": "" },
+              "theme": {
+                "fonts": { "heading": "Inter", "body": "Inter" },
+                "colors": {
+                  "background": "#fff", "surface": "#fff", "foreground": "#000",
+                  "muted": "#888", "primary": "#000", "accent": "#0af"
+                },
+                "spacing": { "xs": 4, "sm": 8, "md": 16, "lg": 32, "xl": 64 },
+                "radii": { "sm": 4, "md": 8, "lg": 16 }
+              },
+              "globalSections": { "header": null, "footer": null },
+              "pages": [{ "id": "p", "slug": "home", "title": "Home", "sections": [] }]
+            }
+        """).RootElement;
+
+        var response = await bob.PatchAsJsonAsync(
+            $"/api/portfolios/{aliceResume.Id}/draft",
+            new PortfolioPro.Api.Endpoints.Portfolios.Drafts.Dto.UpdateDraftRequest(validSnapshot, 1));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        // Alice's portfolio draft is unchanged from its empty-default state.
+        var portfolioDoc = await Fx.Firestore.Collection("users").Document("uid-alice")
+            .Collection("portfolios").Document(aliceResume.Id).GetSnapshotAsync();
+        var draft = portfolioDoc.GetValue<Dictionary<string, object>>("draft");
+        var portfolioMeta = (Dictionary<string, object>)draft["portfolio"];
+        Assert.NotEqual("Hijack", portfolioMeta["title"]);
+    }
 }

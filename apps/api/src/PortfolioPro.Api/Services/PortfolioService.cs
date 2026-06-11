@@ -10,6 +10,7 @@ public sealed class PortfolioService(
     FirestoreDb firestore,
     IClock clock,
     IEmptySnapshotProvider emptySnapshots,
+    ISnapshotValidator snapshotValidator,
     ILogger<PortfolioService> log)
 {
     private const string UsersCollection = "users";
@@ -17,6 +18,11 @@ public sealed class PortfolioService(
     private const string SlugsCollection = "portfolioSlugs";
     private const string DeletionQueueCollection = "deletionQueue";
     private static readonly TimeSpan SoftDeleteGrace = TimeSpan.FromDays(7);
+
+    // 950 KB hard cap per docs/data-model.md — leaves headroom under the
+    // Firestore 1 MiB doc limit. The editor warns at 800 KB; this cap is the
+    // server's "no further saves" guardrail.
+    public const long MaxDraftBytes = 950 * 1024;
 
     public async Task<PortfolioRecord> CreateAsync(
         string uid, string title, string slug, string description, CancellationToken ct)
@@ -239,6 +245,53 @@ public sealed class PortfolioService(
             SoftDeletedAt = null,
             UpdatedAt = now,
         };
+    }
+
+    public async Task<DateTimeOffset> UpdateDraftAsync(
+        string uid,
+        string portfolioId,
+        System.Text.Json.JsonElement draft,
+        int draftSchemaVersion,
+        CancellationToken ct)
+    {
+        var portfolioDoc = PortfolioDoc(uid, portfolioId);
+        var snap = await portfolioDoc.GetSnapshotAsync(ct);
+        if (!snap.Exists)
+            throw new PortfolioNotFoundException();
+        var data = snap.ToDictionary();
+        if (data.TryGetValue("softDeletedAt", out var sd) && sd is Timestamp)
+            throw new PortfolioNotFoundException();
+
+        var rawText = draft.GetRawText();
+        var byteCount = System.Text.Encoding.UTF8.GetByteCount(rawText);
+        if (byteCount > MaxDraftBytes)
+            throw new DraftTooLargeException(byteCount, MaxDraftBytes);
+
+        var validation = snapshotValidator.Validate(draft);
+        if (!validation.IsValid)
+            throw new DraftValidationException(validation.Errors);
+
+        var assetRefs = AssetReferenceWalker.Walk(draft).ToList();
+
+        var parsedNode = System.Text.Json.Nodes.JsonNode.Parse(rawText)
+            ?? throw new InvalidOperationException("Snapshot parsed as null after passing schema validation.");
+        var draftDict = JsonToFirestoreConverter.Convert(parsedNode);
+
+        var now = Timestamp.FromDateTime(clock.UtcNow.UtcDateTime);
+        await portfolioDoc.UpdateAsync(new Dictionary<string, object?>
+        {
+            ["draft"] = draftDict,
+            ["draftUpdatedAt"] = now,
+            ["draftSchemaVersion"] = (long)draftSchemaVersion,
+            ["assetRefsDraft"] = assetRefs,
+            ["updatedAt"] = now,
+        }, cancellationToken: ct);
+
+        log.LogInformation(
+            "Updated draft for portfolio {PortfolioId} ({Bytes} bytes, {AssetRefCount} asset refs)",
+            portfolioId, byteCount, assetRefs.Count);
+
+        return clock.UtcNow;
     }
 
     private DocumentReference PortfolioDoc(string uid, string pid) =>

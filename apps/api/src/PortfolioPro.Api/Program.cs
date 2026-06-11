@@ -4,6 +4,7 @@ using PortfolioPro.Api.Endpoints;
 using PortfolioPro.Api.Endpoints.Auth;
 using PortfolioPro.Api.Endpoints.Portfolios;
 using PortfolioPro.Api.Endpoints.Portfolios.Assets;
+using PortfolioPro.Api.Endpoints.Portfolios.Drafts;
 using PortfolioPro.Api.Errors;
 using PortfolioPro.Api.Infrastructure;
 using PortfolioPro.Api.Services;
@@ -58,6 +59,7 @@ app.MapHealthEndpoints();
 app.MapAuthEndpoints();
 app.MapPortfolioEndpoints();
 app.MapAssetEndpoints();
+app.MapDraftEndpoints();
 
 // Bootstrap fake-gcs bucket so the first upload doesn't 404. Idempotent.
 if (!app.Environment.IsEnvironment("Testing"))
