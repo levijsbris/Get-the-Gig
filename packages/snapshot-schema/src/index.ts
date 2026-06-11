@@ -7,8 +7,15 @@ export type { Page } from './page';
 export { ColumnSchema, SectionSchema } from './section';
 export type { Column, Section } from './section';
 
-export { ThemeSchema, defaultTheme } from './theme';
-export type { Theme } from './theme';
+export {
+  ThemeSchema,
+  TypeStyleSchema,
+  TypeStylesSchema,
+  TYPE_STYLE_NAMES,
+  defaultTheme,
+  defaultTypeStyles,
+} from './theme';
+export type { Theme, TypeStyle, TypeStyles, TypeStyleName } from './theme';
 
 export { ComponentSchema, TextComponentSchema } from './components';
 export type { Component, TextComponent } from './components';

@@ -391,6 +391,7 @@ function SortableComponent({
   const deleteComponent = useEditorStore((s) => s.deleteComponent);
   const moveComponentUp = useEditorStore((s) => s.moveComponentUp);
   const moveComponentDown = useEditorStore((s) => s.moveComponentDown);
+  const updateTextComponentDoc = useEditorStore((s) => s.updateTextComponentDoc);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: componentId,
   });
@@ -436,6 +437,9 @@ function SortableComponent({
             columnIndex,
             componentIndex,
           })
+        }
+        onChange={(doc) =>
+          updateTextComponentDoc(sectionId, columnIndex, componentIndex, doc)
         }
         onMenuAction={handleMenuAction}
       />

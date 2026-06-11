@@ -58,6 +58,27 @@ export interface EditorState {
   duplicateSection: (sectionId: string) => void;
   deleteSection: (sectionId: string) => void;
 
+  /**
+   * Mutate a single text component's TipTap doc with debounced history
+   * grouping — typing produces a single undoable atom per ~500ms idle
+   * window. Bypasses individual addX/duplicateX patterns because text
+   * editing is a high-frequency mutation kind.
+   */
+  updateTextComponentDoc: (
+    sectionId: string,
+    columnIndex: number,
+    componentIndex: number,
+    doc: import('@portfoliopro/snapshot-schema').TipTapDoc,
+  ) => void;
+
+  /** Set the alignment field on a Text component. */
+  setTextComponentAlign: (
+    sectionId: string,
+    columnIndex: number,
+    componentIndex: number,
+    align: 'left' | 'center' | 'right',
+  ) => void;
+
   // component operations
   addTextComponent: (sectionId: string, columnIndex: number, insertIndex?: number) => void;
   /**
@@ -95,11 +116,10 @@ export interface EditorState {
  *   3. validateSelection clears selection if its target is gone
  *   4. isDirty flips on
  *
- * Phase 5 typing flows will add a sibling commitMutationDebounced(key, mutate)
- * that batches multiple mutator calls within a window into ONE history entry.
- * It will reuse the same primitive — no refactor of individual mutations.
  * Mutations call commit(); commit() owns the seam. Nothing else writes to
- * history directly.
+ * history directly. Phase 5 added commitMutationDebounced (below) as a
+ * sibling that batches keystrokes inside a 500ms window into a single
+ * history entry — it reuses the same primitive.
  */
 function commit(state: EditorState, mutate: (draft: Snapshot) => void): Partial<EditorState> {
   const current = currentSnapshot(state.history);
@@ -111,6 +131,54 @@ function commit(state: EditorState, mutate: (draft: Snapshot) => void): Partial<
     selection: validateSelection(state.selection, next),
     isDirty: true,
   };
+}
+
+/**
+ * In-window debounced commit. The first call for a given key pushes a new
+ * history entry; subsequent calls within DEBOUNCE_MS *replace* that entry
+ * (no growing history tail) so typing into a TipTap editor produces a
+ * single undoable atom per ~500ms pause. The window closes via setTimeout
+ * — once it lapses, the next call starts a fresh entry.
+ *
+ * Keyed by the component id so concurrent edits to different components
+ * don't bleed into each other's grouping.
+ */
+const DEBOUNCE_MS = 500;
+const debounceWindows = new Map<string, ReturnType<typeof setTimeout>>();
+
+function commitDebounced(
+  state: EditorState,
+  key: string,
+  mutate: (draft: Snapshot) => void,
+): Partial<EditorState> {
+  const current = currentSnapshot(state.history);
+  const next = produce(current, mutate);
+  if (next === current) return {};
+
+  const inWindow = debounceWindows.has(key);
+  const existing = debounceWindows.get(key);
+  if (existing) clearTimeout(existing);
+  debounceWindows.set(
+    key,
+    setTimeout(() => debounceWindows.delete(key), DEBOUNCE_MS),
+  );
+
+  // First call in a window → push a new entry. Subsequent calls → replace
+  // the entry at the current cursor (so we don't grow history per keystroke).
+  const history = inWindow
+    ? replaceCurrentHistory(state.history, next)
+    : pushHistory(state.history, next);
+  return {
+    history,
+    selection: validateSelection(state.selection, next),
+    isDirty: true,
+  };
+}
+
+function replaceCurrentHistory(history: History, next: Snapshot): History {
+  const entries = [...history.entries];
+  entries[history.index] = next;
+  return { entries, index: history.index };
 }
 
 function initialState(snapshot: Snapshot): {
@@ -303,6 +371,32 @@ export const useEditorStore = create<EditorState>((set, get) => {
             const clamped = Math.max(0, Math.min(insertIndex, column.components.length));
             column.components.splice(clamped, 0, component);
           }
+        }),
+      ),
+
+    updateTextComponentDoc: (sectionId, columnIndex, componentIndex, doc) =>
+      set((state) =>
+        commitDebounced(state, `text:${sectionId}:${columnIndex}:${componentIndex}`, (draft) => {
+          const target = findSection(draft, sectionId);
+          if (!target) return;
+          const column = target.section.columns[columnIndex];
+          if (!column) return;
+          const component = column.components[componentIndex];
+          if (!component || component.type !== 'text') return;
+          component.doc = doc;
+        }),
+      ),
+
+    setTextComponentAlign: (sectionId, columnIndex, componentIndex, align) =>
+      set((state) =>
+        commit(state, (draft) => {
+          const target = findSection(draft, sectionId);
+          if (!target) return;
+          const column = target.section.columns[columnIndex];
+          if (!column) return;
+          const component = column.components[componentIndex];
+          if (!component || component.type !== 'text') return;
+          component.align = align;
         }),
       ),
 

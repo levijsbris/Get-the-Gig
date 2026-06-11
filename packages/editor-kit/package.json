@@ -18,7 +18,13 @@
   },
   "dependencies": {
     "@portfoliopro/renderer": "workspace:*",
-    "@portfoliopro/snapshot-schema": "workspace:*"
+    "@portfoliopro/snapshot-schema": "workspace:*",
+    "@tiptap/core": "^2.10",
+    "@tiptap/extension-link": "^2.10",
+    "@tiptap/extension-paragraph": "^2.10",
+    "@tiptap/pm": "^2.10",
+    "@tiptap/react": "^2.10",
+    "@tiptap/starter-kit": "^2.10"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

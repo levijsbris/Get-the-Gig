@@ -1,5 +1,5 @@
 import { emptySnapshot, type Snapshot, type TextComponent } from '@portfoliopro/snapshot-schema';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../editorStore';
 
 function getSnapshot(): Snapshot {
@@ -242,6 +242,64 @@ describe('editorStore — section + component mutations', () => {
     expect(
       (getSnapshot().pages[0]!.sections[0]!.columns[1]!.components[0]! as TextComponent).id,
     ).toBe(componentId);
+  });
+});
+
+describe('editorStore — updateTextComponentDoc debounced grouping', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    useEditorStore.getState().init(emptySnapshot());
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('groups rapid doc updates for the same component into a single history entry', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0);
+    const before = useEditorStore.getState().history.entries.length;
+
+    // Three updates within the 500ms window → first pushes, others replace.
+    store.updateTextComponentDoc(sectionId, 0, 0, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a' }] }] });
+    store.updateTextComponentDoc(sectionId, 0, 0, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'ab' }] }] });
+    store.updateTextComponentDoc(sectionId, 0, 0, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'abc' }] }] });
+
+    expect(useEditorStore.getState().history.entries.length).toBe(before + 1);
+    const latestComponent = getSnapshot().pages[0]!.sections[0]!.columns[0]!.components[0] as TextComponent;
+    expect(latestComponent.doc.content?.[0]?.content?.[0]?.text).toBe('abc');
+  });
+
+  it('starts a fresh history entry after the idle window lapses', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0);
+    const before = useEditorStore.getState().history.entries.length;
+
+    store.updateTextComponentDoc(sectionId, 0, 0, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a' }] }] });
+    vi.advanceTimersByTime(600);
+    store.updateTextComponentDoc(sectionId, 0, 0, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'ab' }] }] });
+
+    // First call + second call after window each push a new entry → +2.
+    expect(useEditorStore.getState().history.entries.length).toBe(before + 2);
+  });
+
+  it('keys grouping by component id so edits to different components are independent', () => {
+    const store = useEditorStore.getState();
+    store.addSection();
+    const sectionId = getSnapshot().pages[0]!.sections[0]!.id;
+    store.addTextComponent(sectionId, 0);
+    store.addTextComponent(sectionId, 0);
+    const before = useEditorStore.getState().history.entries.length;
+
+    store.updateTextComponentDoc(sectionId, 0, 0, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a' }] }] });
+    store.updateTextComponentDoc(sectionId, 0, 1, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'b' }] }] });
+
+    // Two distinct keys → both first calls push new entries.
+    expect(useEditorStore.getState().history.entries.length).toBe(before + 2);
   });
 });
 
