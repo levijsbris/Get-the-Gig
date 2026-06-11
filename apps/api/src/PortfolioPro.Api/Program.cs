@@ -2,6 +2,7 @@ using FluentValidation;
 using PortfolioPro.Api.Auth;
 using PortfolioPro.Api.Endpoints;
 using PortfolioPro.Api.Endpoints.Auth;
+using PortfolioPro.Api.Endpoints.Portfolios;
 using PortfolioPro.Api.Errors;
 using PortfolioPro.Api.Infrastructure;
 using PortfolioPro.Api.Services;
@@ -35,6 +36,7 @@ builder.Services.AddScoped<RequireUserFilter>();
 
 builder.Services.AddScoped<UsernameService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<PortfolioService>();
 
 builder.Services.AddSingleton<ISnapshotValidator, SnapshotValidator>();
 builder.Services.AddSingleton<IEmptySnapshotProvider, EmptySnapshotProvider>();
@@ -48,6 +50,7 @@ app.UseCors(EditorCorsPolicy);
 
 app.MapHealthEndpoints();
 app.MapAuthEndpoints();
+app.MapPortfolioEndpoints();
 
 app.Run();
 
