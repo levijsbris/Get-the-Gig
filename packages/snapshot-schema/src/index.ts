@@ -1,2 +1,13 @@
-// Placeholder. Zod schemas land in Phase 2 (see docs/build-plan.md, docs/snapshot-schema.md).
-export const SCHEMA_VERSION = 1 as const;
+export { SCHEMA_VERSION, SnapshotSchema } from './snapshot';
+export type { Snapshot } from './snapshot';
+
+export { PageSchema } from './page';
+export type { Page } from './page';
+
+export { ColumnSchema, SectionSchema } from './section';
+export type { Column, Section } from './section';
+
+export { ThemeSchema, defaultTheme } from './theme';
+export type { Theme } from './theme';
+
+export { emptyHomePage, emptySnapshot } from './defaults';
