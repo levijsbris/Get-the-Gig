@@ -1,9 +1,8 @@
 rules_version = '2';
 
-// Phase 1 — auth & tenancy. Subtrees for portfolios/assets/viewerPasswords are
-// allowed here but no Phase 1 endpoint reads or writes them yet; their presence
-// keeps the rules in sync with docs/data-model.md so Phase 2+ can drop endpoints
-// in without rule churn.
+// Phase 2 — adds /users/{uid}/portfolioSlugs/{slug} for transactional slug uniqueness.
+// Subtrees for assets/viewerPasswords still aren't reachable from any endpoint;
+// they're declared so Phase 3+ can land without rule churn.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -26,6 +25,15 @@ service cloud.firestore {
         match /viewerPasswords/{pwid} {
           allow read, write: if request.auth != null && request.auth.uid == uid;
         }
+      }
+
+      // Per-user slug index. The owner can read (for the future "show all my slugs"
+      // diagnostics view) but cannot write — the slug doc and the portfolio doc must
+      // be created and renamed inside the same Firestore transaction, which only the
+      // backend's Admin SDK can do.
+      match /portfolioSlugs/{slug} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
       }
 
       match /assets/{aid} {

@@ -147,7 +147,7 @@ describe('/portfolioRoutes/{routeId}', () => {
   });
 });
 
-describe('/users/{uid}/portfolios/{pid} (Phase 2 stub)', () => {
+describe('/users/{uid}/portfolios/{pid}', () => {
   it('owner can read their portfolio doc', async () => {
     await seedAsAdmin(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'users/alice/portfolios/p1'), { uid: 'alice', slug: 's' });
@@ -156,12 +156,60 @@ describe('/users/{uid}/portfolios/{pid} (Phase 2 stub)', () => {
     await assertSucceeds(getDoc(doc(alice, 'users/alice/portfolios/p1')));
   });
 
+  it('owner can write their portfolio doc', async () => {
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertSucceeds(
+      setDoc(doc(alice, 'users/alice/portfolios/p1'), { uid: 'alice', slug: 's', title: 't' }),
+    );
+  });
+
   it('other user cannot read alice portfolio', async () => {
     await seedAsAdmin(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'users/alice/portfolios/p1'), { uid: 'alice', slug: 's' });
     });
     const bob = env.authenticatedContext('bob').firestore();
     await assertFails(getDoc(doc(bob, 'users/alice/portfolios/p1')));
+  });
+
+  it('other user cannot write alice portfolio', async () => {
+    const bob = env.authenticatedContext('bob').firestore();
+    await assertFails(
+      setDoc(doc(bob, 'users/alice/portfolios/p1'), { uid: 'alice', slug: 's' }),
+    );
+  });
+});
+
+describe('/users/{uid}/portfolioSlugs/{slug}', () => {
+  it('owner can read their own slug index', async () => {
+    await seedAsAdmin(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users/alice/portfolioSlugs/resume'), {
+        pid: 'p1',
+        claimedAt: new Date(),
+      });
+    });
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertSucceeds(getDoc(doc(alice, 'users/alice/portfolioSlugs/resume')));
+  });
+
+  it('other user cannot read alice slug index', async () => {
+    await seedAsAdmin(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users/alice/portfolioSlugs/resume'), {
+        pid: 'p1',
+        claimedAt: new Date(),
+      });
+    });
+    const bob = env.authenticatedContext('bob').firestore();
+    await assertFails(getDoc(doc(bob, 'users/alice/portfolioSlugs/resume')));
+  });
+
+  it('owner cannot write to portfolioSlugs (backend-only)', async () => {
+    const alice = env.authenticatedContext('alice').firestore();
+    await assertFails(
+      setDoc(doc(alice, 'users/alice/portfolioSlugs/resume'), {
+        pid: 'p1',
+        claimedAt: new Date(),
+      }),
+    );
   });
 });
 

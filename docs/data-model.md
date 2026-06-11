@@ -61,6 +61,17 @@ A single portfolio. Document ID is a generated string (ULID).
 }
 ```
 
+### `/users/{uid}/portfolioSlugs/{slug}`
+
+Per-user slug uniqueness index. Document ID is the slug string (lowercased). Written transactionally with `/users/{uid}/portfolios/{portfolioId}` on create and on rename — Firestore transactions can read specific documents but not query a collection, so this index doc is the only way to atomically enforce "slug unique within user" without the where-then-write race. Slugs are released only on hard-delete (the doc survives the 7-day soft-delete grace so restore is trivially safe).
+
+```ts
+{
+  pid: string;            // owning portfolio document id
+  claimedAt: Timestamp;
+}
+```
+
 ### `/users/{uid}/portfolios/{portfolioId}/viewerPasswords/{passwordId}`
 
 ```ts
@@ -160,7 +171,7 @@ Scheduled hard deletions after grace period. Polled by a daily Cloud Run Job (or
 
 Defined in `infra/firestore.indexes.json`:
 
-- Collection group `portfolios` on `(uid, isPublished, updatedAt desc)` — for the editor "your portfolios" listing.
+- Collection group `portfolios` on `(uid, isPublished, updatedAt desc)` — Phase 11 deploy audit point: the Phase 2 list endpoint uses the path-scoped query (`/users/{uid}/portfolios` ordered by `updatedAt desc`) which is implicit-single-field, so this composite index is currently unreferenced. Delete the entry before deploy if no read path uses it by then.
 - Collection group `viewerPasswords` on `(revokedAt, expiresAt)` — for the unlock check (filter out revoked/expired).
 - Collection group `assets` on `(uid, softDeletedAt, createdAt desc)` — for the asset library.
 - `templates` on `(kind asc, category asc, name asc)` — for the template gallery, filterable by kind and category.
@@ -206,6 +217,14 @@ service cloud.firestore {
         match /viewerPasswords/{pwid} {
           allow read, write: if request.auth.uid == uid;
         }
+      }
+
+      // Slug uniqueness index: self-read, server-only write (the slug doc and
+      // portfolio doc must be created or renamed in the same transaction, which
+      // only the backend Admin SDK can do).
+      match /portfolioSlugs/{slug} {
+        allow read: if request.auth.uid == uid;
+        allow write: if false;
       }
 
       match /assets/{aid} {
