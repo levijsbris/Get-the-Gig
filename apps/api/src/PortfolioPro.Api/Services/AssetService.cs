@@ -153,7 +153,7 @@ public sealed class AssetService(
     }
 
     public async Task<ListResult> ListAsync(
-        string uid, string portfolioId, string? contentTypePrefix, CancellationToken ct)
+        string uid, string portfolioId, string? contentTypePrefix, bool includeDeleted, CancellationToken ct)
     {
         var portfolioSnap = await firestore.Collection(UsersCollection).Document(uid)
             .Collection(PortfoliosCollection).Document(portfolioId)
@@ -171,7 +171,8 @@ public sealed class AssetService(
             .Where(d =>
             {
                 var data = d.ToDictionary();
-                if (data.TryGetValue("softDeletedAt", out var sd) && sd is Timestamp)
+                var isSoftDeleted = data.TryGetValue("softDeletedAt", out var sd) && sd is Timestamp;
+                if (!includeDeleted && isSoftDeleted)
                     return false;
                 if (contentTypePrefix is null) return true;
                 return d.GetValue<string>("contentType").StartsWith(contentTypePrefix, StringComparison.Ordinal);
@@ -185,6 +186,68 @@ public sealed class AssetService(
             PortfolioBytesUsed: bytesUsed,
             PortfolioBytesQuota: AssetLimits.PortfolioHardCapBytes,
             WarnPortfolioQuota: bytesUsed >= AssetLimits.PortfolioWarnBytes);
+    }
+
+    public async Task<AssetRecord> RestoreAsync(string uid, string portfolioId, string assetId, CancellationToken ct)
+    {
+        var assetDoc = firestore.Collection(UsersCollection).Document(uid)
+            .Collection(AssetsCollection).Document(assetId);
+        var portfolioDoc = firestore.Collection(UsersCollection).Document(uid)
+            .Collection(PortfoliosCollection).Document(portfolioId);
+        var userDoc = firestore.Collection(UsersCollection).Document(uid);
+
+        var assetSnap = await assetDoc.GetSnapshotAsync(ct);
+        if (!assetSnap.Exists)
+            throw new AssetNotFoundException();
+        var assetData = assetSnap.ToDictionary();
+
+        if (!string.Equals(assetSnap.GetValue<string>("ownerPortfolioId"), portfolioId, StringComparison.Ordinal))
+            throw new AssetNotFoundException();
+
+        if (!(assetData.TryGetValue("softDeletedAt", out var raw) && raw is Timestamp deletedAt))
+            throw new AssetNotSoftDeletedException();
+
+        var elapsed = clock.UtcNow - deletedAt.ToDateTime();
+        if (elapsed > TimeSpan.FromDays(7))
+            throw new AssetGracePeriodExpiredException();
+
+        var portfolioSnap = await portfolioDoc.GetSnapshotAsync(ct);
+        if (!portfolioSnap.Exists)
+            throw new PortfolioNotFoundException();
+
+        var bytesUsed = portfolioSnap.GetValue<long>("storageBytesPortfolio");
+        var byteSize = assetSnap.GetValue<long>("byteSize");
+        var bytesAfter = bytesUsed + byteSize;
+        if (bytesAfter > AssetLimits.PortfolioHardCapBytes)
+            throw new AssetQuotaExceededException(bytesAfter, AssetLimits.PortfolioHardCapBytes);
+
+        var now = Timestamp.FromDateTime(clock.UtcNow.UtcDateTime);
+        var queueDoc = firestore.Collection(DeletionQueueCollection)
+            .Document(DeletionQueueTaskId.For(DeletionQueueTaskId.AssetKind, assetId));
+
+        var batch = firestore.StartBatch();
+        batch.Update(assetDoc, new Dictionary<string, object?>
+        {
+            ["softDeletedAt"] = null,
+        });
+        batch.Update(portfolioDoc, new Dictionary<string, object>
+        {
+            ["storageBytesPortfolio"] = FieldValue.Increment(byteSize),
+            ["updatedAt"] = now,
+        });
+        batch.Update(userDoc, new Dictionary<string, object>
+        {
+            ["storageBytesUsed"] = FieldValue.Increment(byteSize),
+            ["updatedAt"] = now,
+        });
+        batch.Delete(queueDoc);
+        await batch.CommitAsync(ct);
+
+        log.LogInformation(
+            "Restored asset {AssetId} for portfolio {PortfolioId} ({Bytes} bytes)",
+            assetId, portfolioId, byteSize);
+
+        return ToRecord(assetSnap) with { SoftDeletedAt = null };
     }
 
     public async Task SoftDeleteAsync(string uid, string portfolioId, string assetId, CancellationToken ct)

@@ -39,6 +39,12 @@ public static class AssetEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        group.MapPost("/{assetId}/restore", Restore)
+            .WithName("RestoreAsset")
+            .Produces<AssetSummary>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         return app;
     }
 
@@ -95,6 +101,7 @@ public static class AssetEndpoints
     private static async Task<IResult> List(
         string portfolioId,
         string? type,
+        bool? includeDeleted,
         HttpContext http,
         AssetService assets,
         CancellationToken ct)
@@ -107,7 +114,8 @@ public static class AssetEndpoints
             "pdf" => "application/pdf",
             _ => null,
         };
-        var result = await assets.ListAsync(user.Uid, portfolioId, contentTypePrefix, ct);
+        var result = await assets.ListAsync(
+            user.Uid, portfolioId, contentTypePrefix, includeDeleted ?? false, ct);
         return Results.Ok(new ListAssetsResponse(
             Assets: result.Assets.Select(AssetSummary.From).ToList(),
             PortfolioBytesUsed: result.PortfolioBytesUsed,
@@ -125,5 +133,17 @@ public static class AssetEndpoints
         var user = http.GetUser();
         await assets.SoftDeleteAsync(user.Uid, portfolioId, assetId, ct);
         return Results.NoContent();
+    }
+
+    private static async Task<IResult> Restore(
+        string portfolioId,
+        string assetId,
+        HttpContext http,
+        AssetService assets,
+        CancellationToken ct)
+    {
+        var user = http.GetUser();
+        var record = await assets.RestoreAsync(user.Uid, portfolioId, assetId, ct);
+        return Results.Ok(AssetSummary.From(record));
     }
 }

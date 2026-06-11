@@ -110,5 +110,14 @@ public sealed class TenancyTests : EndpointTestBase, IClassFixture<ApiTestFixtur
         var aliceListBody = await aliceList.Content.ReadFromJsonAsync<ListAssetsResponse>();
         Assert.Single(aliceListBody!.Assets);
         Assert.Equal(aliceAsset.Id, aliceListBody.Assets[0].Id);
+
+        // Soft-delete then attempt cross-tenant restore.
+        var aliceDelete = await alice.DeleteAsync(
+            $"/api/portfolios/{aliceResume.Id}/assets/{aliceAsset.Id}");
+        aliceDelete.EnsureSuccessStatusCode();
+
+        var bobRestore = await bob.PostAsync(
+            $"/api/portfolios/{aliceResume.Id}/assets/{aliceAsset.Id}/restore", content: null);
+        Assert.Equal(HttpStatusCode.NotFound, bobRestore.StatusCode);
     }
 }
