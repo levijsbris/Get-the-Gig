@@ -1,9 +1,10 @@
 using Google.Cloud.Firestore;
 using PortfolioPro.Api.Errors;
+using PortfolioPro.Api.Infrastructure;
 
 namespace PortfolioPro.Api.Services;
 
-public sealed class UsernameService(FirestoreDb firestore, ILogger<UsernameService> log)
+public sealed class UsernameService(FirestoreDb firestore, IClock clock, ILogger<UsernameService> log)
 {
     private const string UsernamesCollection = "usernames";
     private const string UsersCollection = "users";
@@ -13,6 +14,8 @@ public sealed class UsernameService(FirestoreDb firestore, ILogger<UsernameServi
         var snap = await firestore.Collection(UsernamesCollection).Document(username).GetSnapshotAsync(ct);
         return !snap.Exists;
     }
+
+    private DateTimeOffset Now => clock.UtcNow;
 
     public async Task ClaimForNewUserAsync(string uid, string email, string username, CancellationToken ct)
     {
@@ -29,7 +32,7 @@ public sealed class UsernameService(FirestoreDb firestore, ILogger<UsernameServi
             if (existingUser.Exists)
                 throw new AccountAlreadyExistsException();
 
-            var now = Timestamp.GetCurrentTimestamp();
+            var now = Timestamp.FromDateTime(clock.UtcNow.UtcDateTime);
             tx.Create(usernameDoc, new Dictionary<string, object>
             {
                 ["uid"] = uid,
@@ -65,7 +68,7 @@ public sealed class UsernameService(FirestoreDb firestore, ILogger<UsernameServi
             if (newExisting.Exists)
                 throw new UsernameConflictException(newUsername);
 
-            var now = Timestamp.GetCurrentTimestamp();
+            var now = Timestamp.FromDateTime(clock.UtcNow.UtcDateTime);
             tx.Create(newDoc, new Dictionary<string, object>
             {
                 ["uid"] = uid,

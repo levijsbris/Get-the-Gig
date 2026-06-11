@@ -1,9 +1,10 @@
 using Google.Cloud.Firestore;
 using PortfolioPro.Api.Errors;
+using PortfolioPro.Api.Infrastructure;
 
 namespace PortfolioPro.Api.Services;
 
-public sealed class UserService(FirestoreDb firestore, ILogger<UserService> log)
+public sealed class UserService(FirestoreDb firestore, IClock clock, ILogger<UserService> log)
 {
     private const string UsersCollection = "users";
     private const string DeletionQueueCollection = "deletionQueue";
@@ -39,9 +40,10 @@ public sealed class UserService(FirestoreDb firestore, ILogger<UserService> log)
         if (!existing.Exists)
             throw new UserNotFoundException();
 
-        var now = Timestamp.GetCurrentTimestamp();
-        var scheduledFor = Timestamp.FromDateTime(DateTime.UtcNow.Add(SoftDeleteGrace));
-        var taskId = Guid.NewGuid().ToString("N");
+        var nowOffset = clock.UtcNow;
+        var now = Timestamp.FromDateTime(nowOffset.UtcDateTime);
+        var scheduledFor = Timestamp.FromDateTime(nowOffset.Add(SoftDeleteGrace).UtcDateTime);
+        var taskId = DeletionQueueTaskId.For(DeletionQueueTaskId.UserKind, uid);
         var queueDoc = firestore.Collection(DeletionQueueCollection).Document(taskId);
 
         var batch = firestore.StartBatch();
@@ -50,9 +52,11 @@ public sealed class UserService(FirestoreDb firestore, ILogger<UserService> log)
             ["softDeletedAt"] = now,
             ["updatedAt"] = now,
         });
-        batch.Create(queueDoc, new Dictionary<string, object>
+        // Set (not Create) so a repeated soft-delete overwrites the existing task
+        // rather than throwing AlreadyExists.
+        batch.Set(queueDoc, new Dictionary<string, object>
         {
-            ["kind"] = "user",
+            ["kind"] = DeletionQueueTaskId.UserKind,
             ["targetUid"] = uid,
             ["targetId"] = uid,
             ["scheduledFor"] = scheduledFor,
@@ -61,7 +65,7 @@ public sealed class UserService(FirestoreDb firestore, ILogger<UserService> log)
 
         // Phase 8 hook: also soft-delete every portfolio owned by this user, unpublish
         // any that are live, and enqueue per-portfolio deletion tasks (see
-        // docs/publish-flow.md § Account deletion). No-op in Phase 1.
+        // docs/publish-flow.md § Account deletion).
 
         log.LogInformation("Soft-deleted user {Uid}; hard delete scheduled for {ScheduledFor}",
             uid, scheduledFor.ToDateTime());

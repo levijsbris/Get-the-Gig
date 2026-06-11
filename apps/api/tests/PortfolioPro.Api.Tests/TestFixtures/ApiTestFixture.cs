@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PortfolioPro.Api.Auth;
+using PortfolioPro.Api.Infrastructure;
 
 namespace PortfolioPro.Api.Tests.TestFixtures;
 
@@ -18,6 +19,7 @@ public sealed class ApiTestFixture : WebApplicationFactory<Program>
     public string FirestoreEmulatorHost { get; }
 
     public TestJwtIssuer Jwt { get; } = new();
+    public FakeClock Clock { get; } = new();
 
     public ApiTestFixture()
     {
@@ -53,6 +55,9 @@ public sealed class ApiTestFixture : WebApplicationFactory<Program>
             services.RemoveAll<IIdTokenValidator>();
             services.AddSingleton(Jwt);
             services.AddSingleton<IIdTokenValidator, LocalKeyIdTokenValidator>();
+
+            services.RemoveAll<PortfolioPro.Api.Infrastructure.IClock>();
+            services.AddSingleton<PortfolioPro.Api.Infrastructure.IClock>(Clock);
         });
     }
 

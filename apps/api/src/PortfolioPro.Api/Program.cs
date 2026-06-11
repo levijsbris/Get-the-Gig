@@ -28,6 +28,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     FirebaseAppBootstrap.Initialize(builder.Configuration);
 }
 builder.Services.AddSingleton(FirestoreFactory.Create(builder.Configuration));
+builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton<IIdTokenValidator, FirebaseIdTokenValidator>();
 builder.Services.AddScoped<RequireUserFilter>();
 
