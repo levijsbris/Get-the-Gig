@@ -11,8 +11,8 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { SectionEditable, TextEditable } from '@portfoliopro/editor-kit';
-import { ThemeProvider } from '@portfoliopro/renderer';
+import { EditableShell, TextEditable } from '@portfoliopro/editor-kit';
+import { ThemeProvider, useTheme } from '@portfoliopro/renderer';
 import { type Section } from '@portfoliopro/snapshot-schema';
 import { useState } from 'react';
 import { useEditorStore, type Viewport } from '../../store/editorStore';
@@ -150,6 +150,7 @@ function SortableSection({
 }) {
   const setSelection = useEditorStore((s) => s.setSelection);
   const selectionState = useEditorStore((s) => s.selection);
+  const theme = useTheme();
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: `section:${section.id}`,
   });
@@ -163,55 +164,72 @@ function SortableSection({
         type="button"
         {...attributes}
         {...listeners}
-        className="absolute left-1 top-1 hidden cursor-grab rounded bg-slate-100 px-1 text-xs text-slate-500 group-hover:block"
+        className="absolute left-1 top-1 z-10 hidden cursor-grab rounded bg-slate-100 px-1 text-xs text-slate-500 group-hover:block"
       >
         ⋮⋮
       </button>
-      <SectionEditable
-        section={section}
+      <EditableShell
         selected={selected}
         onSelect={() => setSelection({ kind: 'section', pageId, sectionId: section.id })}
-      />
-      <SortableContext
-        items={section.columns.flatMap((column, columnIndex) =>
-          column.components.map(
-            (c, componentIndex) =>
-              `component:${section.id}:${columnIndex}:${componentIndex}:${c.id}`,
-          ),
-        )}
-        strategy={verticalListSortingStrategy}
+        label="Section"
       >
-        {section.columns.map((column, columnIndex) => (
-          <Droppable
-            key={column.id}
-            id={`column:${section.id}:${columnIndex}`}
-            isEmpty={column.components.length === 0}
+        <section
+          style={{
+            background: section.background.color ?? 'transparent',
+            paddingTop: section.padding?.top ?? theme.spacing.lg,
+            paddingBottom: section.padding?.bottom ?? theme.spacing.lg,
+            paddingLeft: theme.spacing.md,
+            paddingRight: theme.spacing.md,
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${section.layout.columns}, minmax(0, 1fr))`,
+              gap: section.layout.gap ?? theme.spacing.md,
+            }}
           >
-            {column.components.map((component, componentIndex) => (
-              <SortableComponent
-                key={component.id}
-                componentId={`component:${section.id}:${columnIndex}:${componentIndex}:${component.id}`}
-                component={component}
-                pageId={pageId}
-                sectionId={section.id}
-                columnIndex={columnIndex}
-                componentIndex={componentIndex}
-                selected={
-                  selectionState?.kind === 'component' &&
-                  selectionState.sectionId === section.id &&
-                  selectionState.columnIndex === columnIndex &&
-                  selectionState.componentIndex === componentIndex
-                }
-              />
+            {section.columns.map((column, columnIndex) => (
+              <SortableContext
+                key={column.id}
+                items={column.components.map(
+                  (c, componentIndex) =>
+                    `component:${section.id}:${columnIndex}:${componentIndex}:${c.id}`,
+                )}
+                strategy={verticalListSortingStrategy}
+              >
+                <DroppableColumn
+                  id={`column:${section.id}:${columnIndex}`}
+                  isEmpty={column.components.length === 0}
+                >
+                  {column.components.map((component, componentIndex) => (
+                    <SortableComponent
+                      key={component.id}
+                      componentId={`component:${section.id}:${columnIndex}:${componentIndex}:${component.id}`}
+                      component={component}
+                      pageId={pageId}
+                      sectionId={section.id}
+                      columnIndex={columnIndex}
+                      componentIndex={componentIndex}
+                      selected={
+                        selectionState?.kind === 'component' &&
+                        selectionState.sectionId === section.id &&
+                        selectionState.columnIndex === columnIndex &&
+                        selectionState.componentIndex === componentIndex
+                      }
+                    />
+                  ))}
+                </DroppableColumn>
+              </SortableContext>
             ))}
-          </Droppable>
-        ))}
-      </SortableContext>
+          </div>
+        </section>
+      </EditableShell>
     </div>
   );
 }
 
-function Droppable({
+function DroppableColumn({
   id,
   isEmpty,
   children,
@@ -224,10 +242,12 @@ function Droppable({
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[60px] rounded p-2 transition-colors ${isOver ? 'bg-sky-50' : ''}`}
+      className={`flex min-h-[60px] flex-col gap-2 rounded transition-colors ${
+        isOver ? 'bg-sky-50' : ''
+      }`}
     >
       {isEmpty ? (
-        <div className="rounded border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400">
+        <div className="flex min-h-[60px] items-center justify-center rounded border border-dashed border-slate-200 text-center text-xs text-slate-400">
           Drop here
         </div>
       ) : (
