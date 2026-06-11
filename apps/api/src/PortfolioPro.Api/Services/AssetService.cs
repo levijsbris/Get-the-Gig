@@ -21,6 +21,7 @@ public sealed class AssetService(
     public sealed record UploadRequestResult(
         string AssetId,
         Uri UploadUrl,
+        string UploadMethod,
         string StoragePath,
         long PortfolioBytesAfterUpload,
         bool WarnPortfolioQuota);
@@ -47,7 +48,7 @@ public sealed class AssetService(
 
         var assetId = Ulid.NewUlid().ToString();
         var storagePath = $"users/{uid}/assets/{assetId}/{filename}";
-        var uploadUrl = signedUrls.MintUploadUrl(uid, storagePath, contentType);
+        var signed = signedUrls.MintUploadUrl(uid, storagePath, contentType);
 
         log.LogInformation(
             "Issued upload URL for asset {AssetId} in portfolio {PortfolioId} ({Bytes} bytes)",
@@ -55,7 +56,8 @@ public sealed class AssetService(
 
         return new UploadRequestResult(
             AssetId: assetId,
-            UploadUrl: uploadUrl,
+            UploadUrl: signed.Url,
+            UploadMethod: signed.Method,
             StoragePath: storagePath,
             PortfolioBytesAfterUpload: bytesAfter,
             WarnPortfolioQuota: bytesAfter >= AssetLimits.PortfolioWarnBytes);

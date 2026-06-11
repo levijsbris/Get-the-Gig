@@ -62,6 +62,7 @@ public static class AssetEndpoints
             new UploadUrlResponse(
                 AssetId: result.AssetId,
                 UploadUrl: result.UploadUrl.ToString(),
+                UploadMethod: result.UploadMethod,
                 StoragePath: result.StoragePath,
                 PortfolioBytesAfterUpload: result.PortfolioBytesAfterUpload,
                 PortfolioBytesQuota: AssetLimits.PortfolioHardCapBytes,

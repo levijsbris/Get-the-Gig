@@ -3,14 +3,18 @@ namespace PortfolioPro.Api.Infrastructure;
 public interface ISignedUrlService
 {
     /// <summary>
-    /// Mints a PUT-able URL for an authenticated user to upload directly to the
-    /// private bucket. The implementation MUST refuse any key that does not start
-    /// with users/{uid}/ — the storage-paths-begin-with-users/{uid} rule from the
+    /// Mints a direct-upload URL for an authenticated user to write to the private
+    /// bucket. The implementation MUST refuse any key that does not start with
+    /// users/{uid}/ — the storage-paths-begin-with-users/{uid} rule from the
     /// add-endpoint skill is enforced here so endpoints can't accidentally widen
-    /// the upload scope.
+    /// the upload scope. The HTTP method to use is part of the returned record
+    /// because the emulator (fake-gcs JSON-API simple upload) requires POST while
+    /// production GCS V4 signed URLs use PUT.
     /// </summary>
-    Uri MintUploadUrl(string uid, string key, string contentType);
+    SignedUploadUrl MintUploadUrl(string uid, string key, string contentType);
 }
+
+public sealed record SignedUploadUrl(Uri Url, string Method);
 
 public sealed class InvalidStorageKeyException : InvalidOperationException
 {
