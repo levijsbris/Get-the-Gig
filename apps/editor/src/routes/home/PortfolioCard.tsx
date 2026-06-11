@@ -103,14 +103,19 @@ export function PortfolioCard({ portfolio }: PortfolioCardProps) {
       ) : null}
       <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
         <span>Updated {new Date(portfolio.updatedAt).toLocaleString()}</span>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="text-red-600 hover:text-red-700"
-          disabled={softDelete.isPending}
-        >
-          {softDelete.isPending ? 'Deleting…' : 'Delete'}
-        </button>
+        <div className="flex items-center gap-3">
+          <a href={`/portfolios/${portfolio.id}/assets`} className="text-slate-700 hover:underline">
+            Assets
+          </a>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-red-600 hover:text-red-700"
+            disabled={softDelete.isPending}
+          >
+            {softDelete.isPending ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
       </div>
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </article>

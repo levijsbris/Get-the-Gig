@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Account } from './routes/Account';
+import { AssetLibrary } from './routes/AssetLibrary';
 import { Home } from './routes/Home';
 import { Login } from './routes/Login';
 import { RequireAuth } from './routes/RequireAuth';
@@ -14,6 +15,7 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route path="/" element={<Home />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/portfolios/:id/assets" element={<AssetLibrary />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
