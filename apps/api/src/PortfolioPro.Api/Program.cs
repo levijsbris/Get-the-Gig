@@ -5,6 +5,7 @@ using PortfolioPro.Api.Endpoints.Auth;
 using PortfolioPro.Api.Errors;
 using PortfolioPro.Api.Infrastructure;
 using PortfolioPro.Api.Services;
+using PortfolioPro.Api.Snapshot;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,9 @@ builder.Services.AddScoped<RequireUserFilter>();
 
 builder.Services.AddScoped<UsernameService>();
 builder.Services.AddScoped<UserService>();
+
+builder.Services.AddSingleton<ISnapshotValidator, SnapshotValidator>();
+builder.Services.AddSingleton<IEmptySnapshotProvider, EmptySnapshotProvider>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 

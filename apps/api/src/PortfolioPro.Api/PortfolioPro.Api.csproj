@@ -9,5 +9,32 @@
     <PackageReference Include="FluentValidation" Version="11.10.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
     <PackageReference Include="Google.Cloud.Firestore" Version="3.9.0" />
+    <PackageReference Include="NJsonSchema" Version="11.1.0" />
+    <PackageReference Include="NUlid" Version="1.7.3" />
   </ItemGroup>
+
+  <!--
+    Embed the snapshot schema + empty-default JSON artifacts produced by
+    `pnpm "filter @portfoliopro/snapshot-schema build`. The MSBuild target below
+    fails with a clear message if the artifacts are not present, so a `dotnet build`
+    without first running the snapshot-schema build cannot silently ship a stale
+    schema. CI runs the pnpm build before dotnet test.
+    (XML comments cannot contain double-dash; quote-marks here stand in for the
+     pnpm CLI's "filter" flag.)
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\..\packages\snapshot-schema\dist\artifacts\snapshot.schema.json"
+                      LogicalName="PortfolioPro.Api.Snapshot.snapshot.schema.json"
+                      Condition="Exists('..\..\..\..\packages\snapshot-schema\dist\artifacts\snapshot.schema.json')" />
+    <EmbeddedResource Include="..\..\..\..\packages\snapshot-schema\dist\artifacts\snapshot.empty.json"
+                      LogicalName="PortfolioPro.Api.Snapshot.snapshot.empty.json"
+                      Condition="Exists('..\..\..\..\packages\snapshot-schema\dist\artifacts\snapshot.empty.json')" />
+  </ItemGroup>
+
+  <Target Name="EnsureSnapshotArtifacts" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('..\..\..\..\packages\snapshot-schema\dist\artifacts\snapshot.schema.json')"
+           Text="Snapshot artifacts missing. Run: pnpm --filter @portfoliopro/snapshot-schema build" />
+    <Error Condition="!Exists('..\..\..\..\packages\snapshot-schema\dist\artifacts\snapshot.empty.json')"
+           Text="Snapshot artifacts missing. Run: pnpm --filter @portfoliopro/snapshot-schema build" />
+  </Target>
 </Project>
