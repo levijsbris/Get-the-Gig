@@ -17,6 +17,21 @@ export { TipTapDocSchema, TipTapMarkSchema, emptyTipTapDoc } from './tiptap';
 export type { TipTapDoc, TipTapNode } from './tiptap';
 
 export {
+  HexColorSchema,
+  TokenRefSchema,
+  TokenRefOrColorSchema,
+  TokenRefOrNumberSchema,
+  NavTargetSchema,
+} from './shared';
+export type {
+  HexColor,
+  TokenRef,
+  TokenRefOrColor,
+  TokenRefOrNumber,
+  NavTarget,
+} from './shared';
+
+export {
   emptyHomePage,
   emptySnapshot,
   createColumn,
