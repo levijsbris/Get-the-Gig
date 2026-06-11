@@ -167,6 +167,37 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)
 
+  packages/editor-kit:
+    dependencies:
+      '@portfoliopro/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@portfoliopro/snapshot-schema':
+        specifier: workspace:*
+        version: link:../snapshot-schema
+    devDependencies:
+      '@testing-library/jest-dom':
+        specifier: ^6.6.3
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.28
+      jsdom:
+        specifier: ^25.0.1
+        version: 25.0.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)
+
   packages/renderer:
     dependencies:
       '@portfoliopro/snapshot-schema':
