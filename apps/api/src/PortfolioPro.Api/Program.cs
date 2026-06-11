@@ -34,6 +34,10 @@ builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton<IIdTokenValidator, FirebaseIdTokenValidator>();
 builder.Services.AddScoped<RequireUserFilter>();
 
+builder.Services.AddSingleton(StorageOptions.FromConfiguration(builder.Configuration));
+builder.Services.AddSingleton<ISignedUrlService, EmulatorSignedUrlService>();
+builder.Services.AddHttpClient<IStorageObjectClient, EmulatorStorageObjectClient>();
+
 builder.Services.AddScoped<UsernameService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PortfolioService>();

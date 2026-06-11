@@ -10,7 +10,9 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "FIRESTORE_EMULATOR_HOST": "localhost:8080",
         "FIREBASE_AUTH_EMULATOR_HOST": "localhost:9099",
-        "FIRESTORE_PROJECT_ID": "portfoliopro-local"
+        "FIRESTORE_PROJECT_ID": "portfoliopro-local",
+        "STORAGE_EMULATOR_HOST": "http://localhost:9199",
+        "STORAGE_PRIVATE_BUCKET": "portfoliopro-local-private"
       }
     }
   }
