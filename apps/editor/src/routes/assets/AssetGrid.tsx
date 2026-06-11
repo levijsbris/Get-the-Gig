@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { type AssetSummary, useSoftDeleteAsset } from '../../hooks/useAssets';
+import { AssetThumbnail } from './AssetThumbnail';
 
 interface AssetGridProps {
   portfolioId: string;
@@ -37,9 +38,12 @@ export function AssetGrid({ portfolioId, assets }: AssetGridProps) {
             key={asset.id}
             className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
           >
-            <div className="mb-2 flex h-32 items-center justify-center rounded bg-slate-100 text-xs uppercase text-slate-500">
-              {asset.contentType.split('/')[1] ?? asset.contentType}
-            </div>
+            <AssetThumbnail
+              portfolioId={portfolioId}
+              assetId={asset.id}
+              contentType={asset.contentType}
+              alt={asset.filename}
+            />
             <p className="truncate text-sm font-medium text-slate-900">{asset.filename}</p>
             <p className="text-xs text-slate-500">
               {(asset.byteSize / 1024).toFixed(0)} KB
