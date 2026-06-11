@@ -32,15 +32,23 @@ interface UploadUrlResponse {
 
 type AssetTypeFilter = 'all' | 'image' | 'pdf';
 
-const assetsKey = (portfolioId: string, type: AssetTypeFilter) =>
-  ['assets', portfolioId, type] as const;
+const assetsKey = (portfolioId: string, type: AssetTypeFilter, includeDeleted: boolean) =>
+  ['assets', portfolioId, { type, includeDeleted }] as const;
 
-export function useAssets(portfolioId: string, type: AssetTypeFilter = 'all') {
+export function useAssets(
+  portfolioId: string,
+  type: AssetTypeFilter = 'all',
+  includeDeleted = false,
+) {
   return useQuery({
-    queryKey: assetsKey(portfolioId, type),
+    queryKey: assetsKey(portfolioId, type, includeDeleted),
     queryFn: () => {
-      const qs = type === 'all' ? '' : `?type=${type}`;
-      return apiFetch<ListAssetsResponse>(`/api/portfolios/${portfolioId}/assets${qs}`);
+      const params = new URLSearchParams();
+      if (type !== 'all') params.set('type', type);
+      if (includeDeleted) params.set('includeDeleted', 'true');
+      const qs = params.toString();
+      const path = `/api/portfolios/${portfolioId}/assets${qs ? `?${qs}` : ''}`;
+      return apiFetch<ListAssetsResponse>(path);
     },
     enabled: !!portfolioId,
   });
@@ -103,6 +111,19 @@ export function useSoftDeleteAsset(portfolioId: string) {
   return useMutation({
     mutationFn: (assetId: string) =>
       apiFetch<void>(`/api/portfolios/${portfolioId}/assets/${assetId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['assets', portfolioId] });
+    },
+  });
+}
+
+export function useRestoreAsset(portfolioId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (assetId: string) =>
+      apiFetch<AssetSummary>(`/api/portfolios/${portfolioId}/assets/${assetId}/restore`, {
+        method: 'POST',
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['assets', portfolioId] });
     },
