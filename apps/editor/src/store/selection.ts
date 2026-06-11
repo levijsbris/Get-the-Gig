@@ -2,6 +2,7 @@ import type { Snapshot } from '@portfoliopro/snapshot-schema';
 
 export type Selection =
   | { kind: 'section'; pageId: string; sectionId: string }
+  | { kind: 'column'; pageId: string; sectionId: string; columnIndex: number }
   | {
       kind: 'component';
       pageId: string;
@@ -29,6 +30,21 @@ export function validateSelection(
   if (selection.kind === 'section') return selection;
   const column = section.columns[selection.columnIndex];
   if (!column) return null;
+  if (selection.kind === 'column') return selection;
   if (selection.componentIndex >= column.components.length) return null;
   return selection;
+}
+
+/**
+ * Returns the (sectionId, columnIndex) pair the palette should insert into,
+ * given the current selection. Section selection defaults to column 0;
+ * component selection uses that component's own column; column selection is
+ * a direct hit. Returns null when there's no useful target.
+ */
+export function selectionInsertTarget(
+  selection: Selection | null,
+): { sectionId: string; columnIndex: number } | null {
+  if (!selection) return null;
+  if (selection.kind === 'section') return { sectionId: selection.sectionId, columnIndex: 0 };
+  return { sectionId: selection.sectionId, columnIndex: selection.columnIndex };
 }

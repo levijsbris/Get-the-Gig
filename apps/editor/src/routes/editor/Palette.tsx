@@ -1,23 +1,23 @@
+import { useDraggable } from '@dnd-kit/core';
+import { selectionInsertTarget } from '../../store/selection';
 import { useEditorStore } from '../../store/editorStore';
 
 /**
- * Phase 4 stub palette: just two buttons. "Add empty section" appends a 1-col
- * section to the current page; the component palette only has Text and it
- * inserts into the FIRST column of the SELECTED section (or no-ops if no
- * section is selected). Phase 5 expands this with drag-from-palette and an
- * "image / pdf / card / button / container" component set.
+ * Phase 4 palette. Two insertion paths:
+ *
+ *   1. Click "+ Text" → inserts into the column derived from the current
+ *      selection (section → column 0; column or component → that column).
+ *      Disabled when nothing is selected.
+ *
+ *   2. Drag "+ Text" → drops into any column droppable on the canvas (works
+ *      regardless of selection). Powered by the editor-level DndContext.
  */
 export function Palette() {
   const addSection = useEditorStore((s) => s.addSection);
   const addTextComponent = useEditorStore((s) => s.addTextComponent);
   const selection = useEditorStore((s) => s.selection);
 
-  const selectedSectionId =
-    selection?.kind === 'section'
-      ? selection.sectionId
-      : selection?.kind === 'component'
-        ? selection.sectionId
-        : null;
+  const insertTarget = selectionInsertTarget(selection);
 
   return (
     <aside className="flex w-56 flex-col gap-3 border-l border-slate-200 bg-slate-50 p-4">
@@ -33,20 +33,44 @@ export function Palette() {
       </section>
       <section>
         <h2 className="mb-2 text-xs uppercase tracking-wider text-slate-500">Components</h2>
-        <button
-          type="button"
-          disabled={!selectedSectionId}
+        <DraggablePaletteText
+          enabled={!!insertTarget}
           onClick={() => {
-            if (selectedSectionId) addTextComponent(selectedSectionId, 0);
+            if (insertTarget) addTextComponent(insertTarget.sectionId, insertTarget.columnIndex);
           }}
-          className="w-full rounded-md border border-slate-300 bg-white p-3 text-left text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          + Text
-          {selectedSectionId ? null : (
-            <span className="block text-xs text-slate-400">Select a section first</span>
-          )}
-        </button>
+        />
+        {!insertTarget ? (
+          <p className="mt-2 text-xs text-slate-400">
+            Select a column to insert into, or drag the card onto one.
+          </p>
+        ) : null}
       </section>
     </aside>
+  );
+}
+
+function DraggablePaletteText({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: 'palette:text',
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      disabled={!enabled && !isDragging}
+      onClick={onClick}
+      {...attributes}
+      {...listeners}
+      className={`w-full cursor-grab rounded-md border border-slate-300 bg-white p-3 text-left text-sm transition ${
+        isDragging ? 'opacity-40' : 'hover:bg-slate-50'
+      } disabled:cursor-not-allowed disabled:opacity-50`}
+    >
+      + Text
+      {!enabled ? (
+        <span className="block text-xs text-slate-400">
+          Click after selecting a column, or drag here
+        </span>
+      ) : null}
+    </button>
   );
 }

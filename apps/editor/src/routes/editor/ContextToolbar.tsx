@@ -19,7 +19,18 @@ export function ContextToolbar() {
   if (!selection) {
     return (
       <div className="border-b border-slate-200 bg-white px-4 py-2 text-xs text-slate-400">
-        Nothing selected. Click a section or component on the canvas.
+        Nothing selected. Click a section, column, or component on the canvas.
+      </div>
+    );
+  }
+
+  if (selection.kind === 'column') {
+    return (
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 text-sm">
+        <span className="text-slate-500">
+          Column {selection.columnIndex + 1} selected — click + Text in the palette, or drag a
+          component in.
+        </span>
       </div>
     );
   }
